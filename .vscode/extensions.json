@@ -1,0 +1,8 @@
+{
+    "recommendations": [
+        "mrjjot.vscode-glsl-linter",
+        "xaver.clang-format",
+        "slevesque.shader",
+        "cadenas.vscode-glsllint"
+    ]
+}

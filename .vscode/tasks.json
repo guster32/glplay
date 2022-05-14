@@ -1,0 +1,63 @@
+{
+    "tasks": [
+      {
+        "label": "EnsureDebugBuildOutput",
+        "type": "shell",
+        "command": "mkdir",
+        "args": [
+          "-p",
+          "${workspaceFolder}/build/debug"
+        ],
+        "options": {
+          "cwd": "${workspaceFolder}"
+        }
+      },
+      {
+        "label": "CleanUpDebugBuildOutput",
+        "type": "shell",
+        "command": "rm",
+        "args": [
+          "-rf",
+          "${workspaceFolder}/build/debug/* | true"
+        ],
+        "options": {
+          "cwd": "${workspaceFolder}"
+        }
+      },
+      {
+        "label": "CMake_Debug",
+        "type": "shell",
+        "command": "cmake",
+        "args": [
+          "-DCMAKE_BUILD_TYPE=Debug",
+          "-GNinja",
+          "../../"
+        ],
+        "options": {
+          "cwd": "${workspaceFolder}/build/debug"
+        }
+      },
+      {
+        "label": "Build_With_Ninja",
+        "type": "shell",
+        "command": "ninja",
+        "args": [
+            "-v",
+        ],
+        "options": {
+          "cwd": "${workspaceFolder}/build/debug"
+        }
+      },
+      {
+        "label": "Build",
+        "dependsOrder": "sequence",
+        "dependsOn": [
+          "EnsureDebugBuildOutput",
+          "CleanUpDebugBuildOutput",
+          "CMake_Debug",
+          "Build_With_Ninja"
+        ]
+      }
+    ],
+    "version": "2.0.0"
+  }
