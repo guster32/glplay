@@ -31,9 +31,11 @@ add_definitions(
 )
 
 # Tutorial 1
-add_executable(01_first_window 
-	01_first_window/01_first_window.cpp
+add_executable(glplay 
+glplay/glplay.cpp
 )
-target_link_libraries(01_first_window
+target_link_libraries(glplay
 	${ALL_LIBS}
 )
+
+install(TARGETS glplay RUNTIME DESTINATION bin)
