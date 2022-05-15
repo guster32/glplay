@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-#set(CMAKE_CXX_COMPILER /usr/bin/clang++) # Yocto does not suppurt clang natively
+set(CMAKE_CXX_COMPILER /usr/bin/clang++) # Yocto does not suppurt clang natively
 #set(CMAKE_CXX_COMPILER /usr/bin/g++)
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17") # ToDebug with CLang add '-fstandalone-debug' option
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
@@ -15,9 +15,14 @@ project(OpenGLTutorial)
 find_package(PkgConfig)
 find_package(PkgConfig REQUIRED)
 find_package(OpenGLES2 REQUIRED)
+find_package(DRM REQUIRED)
+find_package(GBM REQUIRED)
 
 set(ALL_LIBS
-	${OPENGL_LIBRARY}
+	${DRM_LIBRARY}
+	${GBM_LIBRARIES}
+	${EGL_LIBRARIES}
+	${OPENGLES2_LIBRARIES}
 )
 
 include_directories(${CMAKE_SOURCE_DIR})
