@@ -234,11 +234,13 @@ static int init_gl(void)
 
 	static const EGLint config_attribs[] = {
 		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-		EGL_RED_SIZE, 1,
-		EGL_GREEN_SIZE, 1,
-		EGL_BLUE_SIZE, 1,
+		EGL_RED_SIZE, 8,
+		EGL_GREEN_SIZE, 8,
+		EGL_BLUE_SIZE, 8,
 		EGL_ALPHA_SIZE, 0,
 		EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+		EGL_DEPTH_SIZE, EGL_DONT_CARE,
+    EGL_STENCIL_SIZE, EGL_DONT_CARE,
 		EGL_NONE
 	};
 
@@ -266,10 +268,33 @@ static int init_gl(void)
 		return -1;
 	}
 
-	if (!eglChooseConfig(gl.display, config_attribs, &gl.config, 1, &n) || n != 1) {
+	EGLint num_configs;
+	if (!eglGetConfigs(gl.display, NULL, 0, &num_configs)) {
+		printf("failed to get configs\n");
+		return -1;
+	}
+
+	EGLConfig *configs = (EGLConfig *)malloc(num_configs * sizeof(EGLConfig));
+	if (!eglChooseConfig(gl.display, config_attribs, configs, num_configs, &n)) {
 		printf("failed to choose config: %d\n", n);
 		return -1;
 	}
+
+	for (int i = 0; i < n; ++i) {
+		EGLint gbm_format;
+
+		if (!eglGetConfigAttrib(gl.display, configs[i],
+														EGL_NATIVE_VISUAL_ID, &gbm_format)) {
+			printf("failed to choose config: %d\n", i);
+			return -1;
+		}
+
+		if (gbm_format == GBM_FORMAT_XRGB8888) {
+				gl.config = configs[i];
+				free(configs);
+				break;
+		}
+}
 
 	gl.context = eglCreateContext(gl.display, gl.config,
 			EGL_NO_CONTEXT, context_attribs);
@@ -278,7 +303,7 @@ static int init_gl(void)
 		return -1;
 	}
 
-	gl.surface = eglCreateWindowSurface(gl.display, gl.config, gbm.surface, NULL);
+	gl.surface = eglCreatePlatformWindowSurface(gl.display, gl.config, gbm.surface, NULL);
 	if (gl.surface == EGL_NO_SURFACE) {
 		printf("failed to create egl surface\n");
 		return -1;

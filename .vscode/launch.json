@@ -15,9 +15,11 @@
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/${fileBasenameNoExtension}",
-            "environment": [{
-                "name":"DISPLAY", "value":"${env:DISPLAY}"
-            }],
+            "internalConsoleOptions": "openOnSessionStart",
+            "environment": [
+                {"name":"DISPLAY", "value":"${env:DISPLAY}"},
+                {"name": "EGL_LOG_LEVEL", "value": "debug"}
+            ],
             "externalConsole": false,
             "miDebuggerPath": "/usr/local/bin/lldb-mi",
             "MIMode": "lldb",
