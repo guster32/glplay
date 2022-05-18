@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_CXX_COMPILER /usr/bin/clang++) # Yocto does not suppurt clang natively
 #set(CMAKE_CXX_COMPILER /usr/bin/g++)
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17") # ToDebug with CLang add '-fstandalone-debug' option
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -DCMAKE_EXPORT_COMPILE_COMMANDS=ON")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 
 if(POLICY CMP0072)

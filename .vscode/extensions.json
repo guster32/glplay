@@ -1,8 +1,12 @@
 {
     "recommendations": [
         "mrjjot.vscode-glsl-linter",
-        "xaver.clang-format",
         "slevesque.shader",
-        "cadenas.vscode-glsllint"
+        "llvm-vs-code-extensions.vscode-clangd",
+        "ms-vscode.cpptools",
+        "ms-vscode.cpptools-extension-pack",
+        "ms-vscode.cpptools-themes",
+        "ms-vscode.cmake-tools",
+        "vadimcn.vscode-lldb"
     ]
 }
