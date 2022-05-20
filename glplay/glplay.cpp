@@ -27,14 +27,16 @@
 
 /* Based on a egl cube test app originally written by Arvin Schnell */
 
+#include <cstdint>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <fcntl.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
+#include <cstring>
+#include <cstdio>
+#include <cstdlib>
+#include <cerrno>
+#include <array>
 
 #include <xf86drm.h>
 #include <xf86drmMode.h>
@@ -46,10 +48,9 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
-#include <assert.h>
+#include <cassert>
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
-
 
 static struct {
 	EGLDisplay display;
@@ -79,17 +80,16 @@ struct drm_fb {
 	uint32_t fb_id;
 };
 
-static uint32_t find_crtc_for_encoder(const drmModeRes *resources,
-				      const drmModeEncoder *encoder) {
-	int i;
+static auto find_crtc_for_encoder(const drmModeRes *resources, const drmModeEncoder *encoder) -> uint32_t {
+	uint32_t idx = 0;
 
-	for (i = 0; i < resources->count_crtcs; i++) {
+	for (idx = 0; idx < resources->count_crtcs; idx++) {
 		/* possible_crtcs is a bitmask as described here:
 		 * https://dvdhrm.wordpress.com/2012/09/13/linux-drm-mode-setting-api
 		 */
-		const uint32_t crtc_mask = 1 << i;
-		const uint32_t crtc_id = resources->crtcs[i];
-		if (encoder->possible_crtcs & crtc_mask) {
+		const uint32_t crtc_mask = 1 << idx;
+		const uint32_t crtc_id = resources->crtcs[idx];
+		if ((encoder->possible_crtcs & crtc_mask) != 0U) {
 			return crtc_id;
 		}
 	}
@@ -98,15 +98,14 @@ static uint32_t find_crtc_for_encoder(const drmModeRes *resources,
 	return -1;
 }
 
-static uint32_t find_crtc_for_connector(const drmModeRes *resources,
-					const drmModeConnector *connector) {
-	int i;
+static auto find_crtc_for_connector(const drmModeRes *resources, const drmModeConnector *connector) -> uint32_t {
+	int idx = 0;
 
-	for (i = 0; i < connector->count_encoders; i++) {
-		const uint32_t encoder_id = connector->encoders[i];
+	for (idx = 0; idx < connector->count_encoders; idx++) {
+		const uint32_t encoder_id = connector->encoders[idx];
 		drmModeEncoder *encoder = drmModeGetEncoder(drm.fd, encoder_id);
 
-		if (encoder) {
+		if (encoder != nullptr) {
 			const uint32_t crtc_id = find_crtc_for_encoder(resources, encoder);
 
 			drmModeFreeEncoder(encoder);
@@ -120,12 +119,12 @@ static uint32_t find_crtc_for_connector(const drmModeRes *resources,
 	return -1;
 }
 
-static int init_drm(void)
-{
-	drmModeRes *resources;
-	drmModeConnector *connector = NULL;
-	drmModeEncoder *encoder = NULL;
-	int i, area;
+static auto init_drm() -> int {
+	drmModeRes *resources = nullptr;
+	drmModeConnector *connector = nullptr;
+	drmModeEncoder *encoder = nullptr;
+	int idx = 0;
+	int area = 0;
 
 	drm.fd = open("/dev/dri/card0", O_RDWR);
 	
@@ -135,23 +134,23 @@ static int init_drm(void)
 	}
 
 	resources = drmModeGetResources(drm.fd);
-	if (!resources) {
+	if (resources == nullptr) {
 		printf("drmModeGetResources failed: %s\n", strerror(errno));
 		return -1;
 	}
 
 	/* find a connected connector: */
-	for (i = 0; i < resources->count_connectors; i++) {
-		connector = drmModeGetConnector(drm.fd, resources->connectors[i]);
+	for (idx = 0; idx < resources->count_connectors; idx++) {
+		connector = drmModeGetConnector(drm.fd, resources->connectors[idx]);
 		if (connector->connection == DRM_MODE_CONNECTED) {
 			/* it's connected, let's use this! */
 			break;
 		}
 		drmModeFreeConnector(connector);
-		connector = NULL;
+		connector = nullptr;
 	}
 
-	if (!connector) {
+	if (connector == nullptr) {
 		/* we could be fancy and listen for hotplug events and wait for
 		 * a connector..
 		 */
@@ -160,10 +159,10 @@ static int init_drm(void)
 	}
 
 	/* find prefered mode or the highest resolution mode: */
-	for (i = 0, area = 0; i < connector->count_modes; i++) {
-		drmModeModeInfo *current_mode = &connector->modes[i];
+	for (idx = 0, area = 0; idx < connector->count_modes; idx++) {
+		drmModeModeInfo *current_mode = &connector->modes[idx];
 
-		if (current_mode->type & DRM_MODE_TYPE_PREFERRED) {
+		if ((current_mode->type & DRM_MODE_TYPE_PREFERRED) != 0U) {
 			drm.mode = current_mode;
 		}
 
@@ -174,21 +173,22 @@ static int init_drm(void)
 		}
 	}
 
-	if (!drm.mode) {
+	if (drm.mode == nullptr) {
 		printf("could not find mode!\n");
 		return -1;
 	}
 
 	/* find encoder: */
-	for (i = 0; i < resources->count_encoders; i++) {
-		encoder = drmModeGetEncoder(drm.fd, resources->encoders[i]);
-		if (encoder->encoder_id == connector->encoder_id)
+	for (idx = 0; idx < resources->count_encoders; idx++) {
+		encoder = drmModeGetEncoder(drm.fd, resources->encoders[idx]);
+		if (encoder->encoder_id == connector->encoder_id) {
 			break;
+		}
 		drmModeFreeEncoder(encoder);
-		encoder = NULL;
+		encoder = nullptr;
 	}
 
-	if (encoder) {
+	if (encoder != nullptr) {
 		drm.crtc_id = encoder->crtc_id;
 	} else {
 		uint32_t crtc_id = find_crtc_for_connector(resources, connector);
@@ -205,15 +205,14 @@ static int init_drm(void)
 	return 0;
 }
 
-static int init_gbm(void)
-{
+static auto init_gbm() -> int {
 	gbm.dev = gbm_create_device(drm.fd);
 
 	gbm.surface = gbm_surface_create(gbm.dev,
 			drm.mode->hdisplay, drm.mode->vdisplay,
 			GBM_FORMAT_XRGB8888,
 			GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
-	if (!gbm.surface) {
+	if (gbm.surface == nullptr) {
 		printf("failed to create gbm surface\n");
 		return -1;
 	}
@@ -221,18 +220,20 @@ static int init_gbm(void)
 	return 0;
 }
 
-static int init_gl(void)
-{
-	EGLint major, minor, n;
-	GLuint vertex_shader, fragment_shader;
-	GLint ret;
+static auto init_gl() -> int {
+	EGLint major = 0;
+	EGLint minor = 0;
+	EGLint n = 0;
+	GLuint vertex_shader = 0;
+	GLuint fragment_shader = 0;
+	GLint ret = 0;
 
-	static const EGLint context_attribs[] = {
+	static const std::array<EGLint, 3> context_attribs = {
 		EGL_CONTEXT_CLIENT_VERSION, 2,
 		EGL_NONE
 	};
 
-	static const EGLint config_attribs[] = {
+	static const std::array<EGLint, 17> config_attribs = {
 		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
 		EGL_RED_SIZE, 8,
 		EGL_GREEN_SIZE, 8,
@@ -244,14 +245,14 @@ static int init_gl(void)
 		EGL_NONE
 	};
 
-	PFNEGLGETPLATFORMDISPLAYEXTPROC get_platform_display = NULL;
+	PFNEGLGETPLATFORMDISPLAYEXTPROC get_platform_display = nullptr;
 	get_platform_display =
-		(PFNEGLGETPLATFORMDISPLAYEXTPROC) eglGetProcAddress("eglGetPlatformDisplayEXT");
-	assert(get_platform_display != NULL);
+		reinterpret_cast<PFNEGLGETPLATFORMDISPLAYEXTPROC>(eglGetProcAddress("eglGetPlatformDisplayEXT"));
+	assert(get_platform_display != nullptr);
 
-	gl.display = get_platform_display(EGL_PLATFORM_GBM_KHR, gbm.dev, NULL);
+	gl.display = get_platform_display(EGL_PLATFORM_GBM_KHR, gbm.dev, nullptr);
 
-	if (!eglInitialize(gl.display, &major, &minor)) {
+	if (eglInitialize(gl.display, &major, &minor) == 0U) {
 		printf("failed to initialize\n");
 		return -1;
 	}
@@ -263,28 +264,27 @@ static int init_gl(void)
 	printf("EGL Vendor \"%s\"\n", eglQueryString(gl.display, EGL_VENDOR));
 	printf("EGL Extensions \"%s\"\n", eglQueryString(gl.display, EGL_EXTENSIONS));
 
-	if (!eglBindAPI(EGL_OPENGL_ES_API)) {
+	if (eglBindAPI(EGL_OPENGL_ES_API) == 0U) {
 		printf("failed to bind api EGL_OPENGL_ES_API\n");
 		return -1;
 	}
 
-	EGLint num_configs;
-	if (!eglGetConfigs(gl.display, NULL, 0, &num_configs)) {
+	EGLint num_configs = 0;
+	if (eglGetConfigs(gl.display, nullptr, 0, &num_configs) == 0U) {
 		printf("failed to get configs\n");
 		return -1;
 	}
 
 	EGLConfig *configs = (EGLConfig *)malloc(num_configs * sizeof(EGLConfig));
-	if (!eglChooseConfig(gl.display, config_attribs, configs, num_configs, &n)) {
+	if (eglChooseConfig(gl.display, config_attribs.data(), configs, num_configs, &n) == 0U) {
 		printf("failed to choose config: %d\n", n);
 		return -1;
 	}
 
 	for (int i = 0; i < n; ++i) {
-		EGLint gbm_format;
+		EGLint gbm_format = 0;
 
-		if (!eglGetConfigAttrib(gl.display, configs[i],
-														EGL_NATIVE_VISUAL_ID, &gbm_format)) {
+		if (eglGetConfigAttrib(gl.display, configs[i],EGL_NATIVE_VISUAL_ID, &gbm_format) == 0U) {
 			printf("failed to choose config: %d\n", i);
 			return -1;
 		}
@@ -296,14 +296,13 @@ static int init_gl(void)
 		}
 }
 
-	gl.context = eglCreateContext(gl.display, gl.config,
-			EGL_NO_CONTEXT, context_attribs);
-	if (gl.context == NULL) {
+	gl.context = eglCreateContext(gl.display, gl.config, EGL_NO_CONTEXT, context_attribs.data());
+	if (gl.context == nullptr) {
 		printf("failed to create context\n");
 		return -1;
 	}
 
-	gl.surface = eglCreatePlatformWindowSurface(gl.display, gl.config, gbm.surface, NULL);
+	gl.surface = eglCreatePlatformWindowSurface(gl.display, gl.config, gbm.surface, nullptr);
 	if (gl.surface == EGL_NO_SURFACE) {
 		printf("failed to create egl surface\n");
 		return -1;
@@ -318,34 +317,35 @@ static int init_gl(void)
 }
 
 /* Draw code here */
-static void draw(uint32_t i)
-{
+static void draw() {
 	glClear(GL_COLOR_BUFFER_BIT);
 	glClearColor(0.2f, 0.3f, 0.5f, 1.0f);
 }
 
-static void
-drm_fb_destroy_callback(struct gbm_bo *bo, void *data)
-{
-	struct drm_fb *fb = (struct drm_fb *)data;
+static void drm_fb_destroy_callback(struct gbm_bo *bo, void *data) {
+	auto *fb = static_cast<struct drm_fb *>(data);
 	struct gbm_device *gbm = gbm_bo_get_device(bo);
 
-	if (fb->fb_id)
+	if (fb->fb_id) {
 		drmModeRmFB(drm.fd, fb->fb_id);
+	}
 
 	free(fb);
 }
 
-static struct drm_fb * drm_fb_get_from_bo(struct gbm_bo *bo)
-{
-	struct drm_fb *fb = (struct drm_fb *)gbm_bo_get_user_data(bo);
-	uint32_t width, height, stride, handle;
-	int ret;
+static auto drm_fb_get_from_bo(struct gbm_bo *bo) -> struct drm_fb * {
+	auto *fb = static_cast<struct drm_fb *>(gbm_bo_get_user_data(bo));
+	uint32_t width = 0;
+	uint32_t height = 0;
+	uint32_t stride = 0;
+	uint32_t handle = 0;
+	int ret = 0;
 
-	if (fb)
+	if (fb) {
 		return fb;
+	}
 
-	fb = (struct drm_fb *)calloc(1, sizeof *fb);
+	fb = static_cast<struct drm_fb *>(calloc(1, sizeof *fb));
 	fb->bo = bo;
 
 	width = gbm_bo_get_width(bo);
@@ -354,10 +354,10 @@ static struct drm_fb * drm_fb_get_from_bo(struct gbm_bo *bo)
 	handle = gbm_bo_get_handle(bo).u32;
 
 	ret = drmModeAddFB(drm.fd, width, height, 24, 32, stride, handle, &fb->fb_id);
-	if (ret) {
+	if (ret != 0) {
 		printf("failed to create fb: %s\n", strerror(errno));
 		free(fb);
-		return NULL;
+		return nullptr;
 	}
 
 	gbm_bo_set_user_data(bo, fb, drm_fb_destroy_callback);
@@ -365,10 +365,8 @@ static struct drm_fb * drm_fb_get_from_bo(struct gbm_bo *bo)
 	return fb;
 }
 
-static void page_flip_handler(int fd, unsigned int frame,
-	unsigned int sec, unsigned int usec, void *data)
-{
-	int *waiting_for_flip = (int *)data;
+static void page_flip_handler(int fd, unsigned int frame, unsigned int sec, unsigned int usec, void *data) {
+	int *waiting_for_flip = static_cast<int *>(data);
 	*waiting_for_flip = 0;
 }
 
@@ -407,20 +405,19 @@ static void page_flip_handler(int fd, unsigned int frame,
 // 	}
 // } 
 
-int main(int argc, char *argv[])
-{
+auto main(int argc, char *argv[]) -> int {
 	fd_set fds;
 	drmEventContext evctx = {
 		.version = DRM_EVENT_CONTEXT_VERSION,
 		.page_flip_handler = page_flip_handler,
 	};
-	struct gbm_bo *bo;
-	struct drm_fb *fb;
-	uint32_t i = 0;
-	int ret;
+	struct gbm_bo *bo = nullptr;
+	struct drm_fb *fb = nullptr;
+	uint32_t idx = 0;
+	int ret = 0;
 
 	ret = init_drm();
-	if (ret) {
+	if (ret != 0) {
 		printf("failed to initialize DRM\n");
 		return ret;
 	}
@@ -430,13 +427,13 @@ int main(int argc, char *argv[])
 	FD_SET(drm.fd, &fds);
 
 	ret = init_gbm();
-	if (ret) {
+	if (ret != 0) {
 		printf("failed to initialize GBM\n");
 		return ret;
 	}
 
 	ret = init_gl();
-	if (ret) {
+	if (ret != 0) {
 		printf("failed to initialize EGL\n");
 		return ret;
 	}
@@ -451,16 +448,16 @@ int main(int argc, char *argv[])
 	/* set mode: */
 	ret = drmModeSetCrtc(drm.fd, drm.crtc_id, fb->fb_id, 0, 0,
 			&drm.connector_id, 1, drm.mode);
-	if (ret) {
+	if (ret != 0) {
 		printf("failed to set mode: %s\n", strerror(errno));
 		return ret;
 	}
 
-	while (1) {
-		struct gbm_bo *next_bo;
+	while (true) {
+		struct gbm_bo *next_bo = nullptr;
 		int waiting_for_flip = 1;
 
-		draw(i++);
+		draw();
 
 		eglSwapBuffers(gl.display, gl.surface);
 		next_bo = gbm_surface_lock_front_buffer(gbm.surface);
@@ -473,12 +470,12 @@ int main(int argc, char *argv[])
 
 		ret = drmModePageFlip(drm.fd, drm.crtc_id, fb->fb_id,
 				DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip);
-		if (ret) {
+		if (ret != 0) {
 			printf("failed to queue page flip: %s\n", strerror(errno));
 			return -1;
 		}
 
-		while (waiting_for_flip) {
+		while (waiting_for_flip != 0) {
 			ret = select(drm.fd + 1, &fds, NULL, NULL, NULL);
 			if (ret < 0) {
 				printf("select err: %s\n", strerror(errno));

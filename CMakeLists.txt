@@ -11,7 +11,7 @@ if(POLICY CMP0072)
 endif()
 
 
-project(OpenGLTutorial)
+project(Glplay)
 
 find_package(PkgConfig)
 find_package(PkgConfig REQUIRED)
