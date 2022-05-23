@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
 
-set(CMAKE_CXX_COMPILER /usr/bin/clang++) # Yocto does not suppurt clang natively
+set(CMAKE_CXX_COMPILER /usr/bin/clang++) # Yocto does not support clang natively
+# set(CMAKE_C_COMPILER /usr/bin/clang)
 #set(CMAKE_CXX_COMPILER /usr/bin/g++)
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17") # ToDebug with CLang add '-fstandalone-debug' option
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -DCMAKE_EXPORT_COMPILE_COMMANDS=ON")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -DCMAKE_EXPORT_COMPILE_COMMANDS=ON")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 
 if(POLICY CMP0072)
@@ -36,9 +37,9 @@ add_definitions(
 	-D_CRT_SECURE_NO_WARNINGS
 )
 
-# Tutorial 1
-add_executable(glplay 
-glplay/glplay.cpp
+add_executable(glplay
+glplay/DisplayAdapter.cpp
+glplay/main.cpp
 )
 target_link_libraries(glplay
 	${ALL_LIBS}

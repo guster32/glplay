@@ -8,13 +8,13 @@
             "name": "Debug GlPlay",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/debug/${fileBasenameNoExtension}",
+            "program": "${workspaceFolder}/build/debug/glplay",
             "args": [
               "localhost",
               "5672"
             ],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/${fileBasenameNoExtension}",
+            "cwd": "${workspaceFolder}/glplay",
             "internalConsoleOptions": "openOnSessionStart",
             "environment": [
                 {"name":"DISPLAY", "value":"${env:DISPLAY}"},

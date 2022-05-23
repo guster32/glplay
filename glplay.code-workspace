@@ -1,19 +1,7 @@
 {
 	"folders": [
 		{
-			"path": "../meta-arcadia"
-		},
-		{
-			"path": "../scripts"
-		},
-		{
-			"path": "../glplay-rs"
-		},
-		{
 			"path": "."
-		},
-		{
-			"path": "../ogl"
 		}
 	],
 	"settings": {
