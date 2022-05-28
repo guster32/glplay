@@ -1,11 +1,19 @@
-#include "DisplayAdapter.h"
+#include <xf86drmMode.h>
+#include <gbm.h>
+#include <cstring>
+#include <fcntl.h>
+#include <stdexcept>
+#include <string>
+#include <vector>
+#include <cstdlib>
+#include <xf86drm.h>
+
+#include "DisplayAdapter.hpp"
 
 
+DisplayAdapter::DisplayAdapter(char* path) : fd(open(path, O_RDWR)) {
 
-
-DisplayAdapter::DisplayAdapter(std::string path) : fd(open(path.c_str(), O_RDWR)) {
-
-	int err = drmSetClientCap(fd, DRM_CLIENT_CAP_UNIVERSAL_PLANES, 1);
+	uint err = drmSetClientCap(fd, DRM_CLIENT_CAP_UNIVERSAL_PLANES, 1);
 	err |= drmSetClientCap(fd, DRM_CLIENT_CAP_ATOMIC, 1);
 	
 	if (err != 0) {
@@ -94,18 +102,27 @@ DisplayAdapter::DisplayAdapter(std::string path) : fd(open(path.c_str(), O_RDWR)
 
 auto DisplayAdapter::getDevices() -> std::vector<std::string> {
 	gsl::owner<drmDevicePtr*> devices = nullptr;
-	int deviceCount;
+	std::vector<std::string> vect;
+	int deviceCount = 0;
 	deviceCount = drmGetDevices2(0, nullptr, 0);
 	devices = static_cast<gsl::owner<drmDevicePtr*>>(new drmDevicePtr[deviceCount]);
 	deviceCount = drmGetDevices2(0, devices, deviceCount);
 
 	for (int i = 0; i < deviceCount; i++) {
-		drmDevicePtr candidate = devices[i];
+		drmDevicePtr device = devices[i];
+		/*
+		 * We need a PRIMARY node (aka. /dev/dri/card0) for KMS/modesetting. 
+		 * Render nodes are only used for GPU rendering
+		*/
+		if ((device->available_nodes & (1U << DRM_NODE_PRIMARY)) == 0U){
+			continue;
+		}
+		vect.emplace_back(std::string(device->nodes[DRM_NODE_PRIMARY]));
 	}
 
 	drmFreeDevices(devices, deviceCount);
 
-	std::vector<std::string> vect;
+	
 	return vect;
 }
 

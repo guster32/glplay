@@ -27,8 +27,6 @@ set(ALL_LIBS
 	${OPENGLES2_LIBRARIES}
 )
 
-include_directories(${CMAKE_SOURCE_DIR})
-
 add_definitions(
 	-DTW_STATIC
 	-DTW_NO_LIB_PRAGMA
@@ -37,12 +35,10 @@ add_definitions(
 	-D_CRT_SECURE_NO_WARNINGS
 )
 
-add_executable(glplay
-glplay/DisplayAdapter.cpp
-glplay/main.cpp
-)
-target_link_libraries(glplay
-	${ALL_LIBS}
-)
+file(GLOB GLPLAY_SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
+file(GLOB GSL_INCLUDES ${PROJECT_SOURCE_DIR}/third-party/gsl/*)
+
+add_executable(glplay ${GLPLAY_SOURCES} ${GSL_INCLUDES})
+target_link_libraries(glplay ${ALL_LIBS})
 
 install(TARGETS glplay RUNTIME DESTINATION bin)

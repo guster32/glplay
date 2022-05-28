@@ -50,7 +50,7 @@
 
 #include <cassert>
 
-#include "DisplayAdapter.h"
+#include "DisplayAdapter.hpp"
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
@@ -86,7 +86,7 @@ static auto init_gl(DisplayAdapter &adapter) -> int {
 
 	static const std::array<EGLint, 17> config_attribs = {
 		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-		EGL_RED_SIZE, 8,
+		
 		EGL_GREEN_SIZE, 8,
 		EGL_BLUE_SIZE, 8,
 		EGL_ALPHA_SIZE, 0,
@@ -269,6 +269,7 @@ auto main(int argc, char *argv[]) -> int {
 	uint32_t idx = 0;
 	int ret = 0;
 
+	//auto devices = DisplayAdapter::getDevices();
 	auto adapter = DisplayAdapter("/dev/dri/card0");
 
 	FD_ZERO(&fds);
