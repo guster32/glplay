@@ -6,4 +6,6 @@ CheckOptions:
       value: WinMain,SDL_main
     - key: misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic
       value: 1
+    - key: hicpp-signed-bitwise.IgnorePositiveIntegerLiterals
+      value: 1
 FormatStyle: 'file'

@@ -26,7 +26,7 @@ Language: Cpp
 # void formatted_code_again;
 
 DisableFormat:   false
-Standard: Cpp20
+Standard: C++11
 
 AccessModifierOffset: -4
 AlignAfterOpenBracket: true

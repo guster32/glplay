@@ -35,10 +35,19 @@ add_definitions(
 	-D_CRT_SECURE_NO_WARNINGS
 )
 
-file(GLOB GLPLAY_SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
+file(GLOB GLPLAY_SOURCES ${PROJECT_SOURCE_DIR}/src/glplay/*.cpp)
+file(GLOB DRM_SOURCES ${PROJECT_SOURCE_DIR}/src/drm/*.cpp)
+file(GLOB KMS_SOURCES ${PROJECT_SOURCE_DIR}/src/kms/*.cpp)
+file(GLOB NIX_SOURCES ${PROJECT_SOURCE_DIR}/src/nix/*.cpp)
 file(GLOB GSL_INCLUDES ${PROJECT_SOURCE_DIR}/third-party/gsl/*)
 
-add_executable(glplay ${GLPLAY_SOURCES} ${GSL_INCLUDES})
+add_executable(glplay
+	${GLPLAY_SOURCES}
+	${DRM_SOURCES}
+	${KMS_SOURCES}
+	${NIX_SOURCES}
+	${GSL_INCLUDES}
+)
 target_link_libraries(glplay ${ALL_LIBS})
 
 install(TARGETS glplay RUNTIME DESTINATION bin)
