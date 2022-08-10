@@ -2,7 +2,7 @@
 
 namespace glplay::drm {
   //Constructor
-  Connector::Connector(int fileDesc, int connectorId): fileDesc(fileDesc), connectorId(connectorId), connector(drmModeGetConnector(fileDesc, connectorId)) {
+  Connector::Connector(int fileDesc, uint32_t connectorId): fileDesc(fileDesc), connectorId(connectorId), connector(drmModeGetConnector(fileDesc, connectorId)) {
     if (connector == nullptr) {
 			throw std::runtime_error(std::string("Unable to get connector: ") + strerror(errno));
 		}
@@ -63,6 +63,10 @@ namespace glplay::drm {
     other.connectorId = -1;
     other.connector = nullptr;
     return *this;
+  }
+
+  auto Connector::hasEncoder() -> bool {
+    return connector->encoder_id != 0;
   }
 
 }

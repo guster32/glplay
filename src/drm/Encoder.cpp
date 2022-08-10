@@ -2,7 +2,7 @@
 
 namespace glplay::drm {
   //Constructor
-  Encoder::Encoder(int fileDesc, int encoderId): fileDesc(fileDesc), encoderId(encoderId), encoder(drmModeGetEncoder(fileDesc, encoderId)) {
+  Encoder::Encoder(int fileDesc, uint32_t encoderId): fileDesc(fileDesc), encoderId(encoderId), encoder(drmModeGetEncoder(fileDesc, encoderId)) {
     if (encoder == nullptr) {
 			throw std::runtime_error(std::string("Unable to get encoder: ") + strerror(errno));
 		}
@@ -64,5 +64,10 @@ namespace glplay::drm {
     other.encoder = nullptr;
     return *this;
   }
+
+  auto Encoder::hasCrtc() -> bool {
+    return encoder->encoder_id != 0;
+  }
+
 
 }

@@ -1,6 +1,4 @@
 #include "DisplayAdapter.hpp"
-#include "drm.h"
-
 
 namespace glplay::kms {
   DisplayAdapter::DisplayAdapter(std::string &path): adapterFD(path, O_RDWR | O_CLOEXEC) {
@@ -36,93 +34,52 @@ namespace glplay::kms {
     for(uint32_t idx = 0; idx < planeResources->count_planes; ++idx) {
 			planes.emplace_back(fd, planeResources->planes[idx]);
     }
-		printf("Im done here!! lets cleanup");
-
-
+		
+		for(int idx = 0; idx < resources->count_connectors; idx++) {
+			auto connector = drm::Connector(fd, resources->connectors[idx]);
+			
+			if(connector->encoder_id == 0) {
+				std::cout << "[CONN:" << connector->connector_id << "]: no encoder\n";
+				continue;
+			}
+			auto encoder = findEncoderForConnector(resources, connector);
+			auto crtc = findCrtcForEncoder(resources, encoder);
+			auto plane = findPrimaryPlaneForCrtc(crtc);
+			if(connector.hasEncoder() && encoder.hasCrtc() && crtc.isActive()) {
+				displays.emplace_back(fd, connector, crtc, plane);
+			}
+		}
+		if(displays.empty()) {
+			throw std::runtime_error("Device has not active displays");
+		}
   }
 
-  // void DisplayAdapter::openDevice() {
+	auto DisplayAdapter::findEncoderForConnector(drm::Resources &resources, drm::Connector &connector) -> drm::Encoder {
+		for(int idx = 0; idx < resources->count_encoders; idx++) {
+      if (resources->encoders[idx] == connector->encoder_id) {
+				return drm::Encoder(adapterFD.fileDescriptor(), resources->encoders[idx]);
+			}
+		}
+		throw std::runtime_error("Unable to find encoder for connector");
+	}
 
+	auto DisplayAdapter::findCrtcForEncoder(drm::Resources &resources, drm::Encoder &encoder) -> drm::Crtc {
+		for(int idx = 0; idx < resources->count_crtcs; idx++) {
+      if (resources->crtcs[idx] == encoder->crtc_id) {
+				return drm::Crtc(adapterFD.fileDescriptor(), resources->crtcs[idx]);
+			}
+		}
+		throw std::runtime_error("Unable to find crtc for encoder");
+	}
 
+	auto DisplayAdapter::findPrimaryPlaneForCrtc(drm::Crtc &crtc) -> drm::Plane {
+		for (auto &plane : planes){
+			if(plane->crtc_id == crtc->crtc_id && plane->fb_id == crtc->buffer_id) {
+				return plane;
+			}
+		}
+		throw std::runtime_error("Unable to find plane for crtc");
+	}
 
-
-
-
-
-
-
-
-
-
-	// 	drmModeConnector *connector = nullptr;
-
-	// 	/* find a connected connector: */
-	// 	for (int idx = 0; idx < resources->count_connectors; idx++) {
-	// 		connector = drmModeGetConnector(fd, resources->connectors[idx]);
-	// 		if (connector->connection == DRM_MODE_CONNECTED) {
-	// 			/* it's connected, let's use this! */
-	// 			break;
-	// 		}
-	// 		drmModeFreeConnector(connector);
-	// 		connector = nullptr;
-	// 	}
-
-	// 		if (connector == nullptr) {
-	// 		/* we could be fancy and listen for hotplug events and wait for
-	// 		* a connector..
-	// 		*/
-	// 		throw std::runtime_error("no connected connector!");
-	// 	}
-
-	// 		/* find prefered mode or the highest resolution mode: */
-	// 	for (int idx = 0, area = 0; idx < connector->count_modes; idx++) {
-	// 		drmModeModeInfo *current_mode = &connector->modes[idx];
-
-	// 		if ((current_mode->type & DRM_MODE_TYPE_PREFERRED) != 0U) {
-	// 			mode = current_mode;
-	// 		}
-
-	// 		int current_area = current_mode->hdisplay * current_mode->vdisplay;
-	// 		if (current_area > area) {
-	// 			mode = current_mode;
-	// 			area = current_area;
-	// 		}
-	// 	}
-		
-	// 	if (mode == nullptr) {
-	// 		throw std::runtime_error("could not find mode!");
-	// 	}
-
-	// 		/* find encoder: */
-	// 	for (int idx = 0; idx < resources->count_encoders; idx++) {
-	// 		encoder = drmModeGetEncoder(fd, resources->encoders[idx]);
-	// 		if (encoder->encoder_id == connector->encoder_id) {
-	// 			break;
-	// 		}
-	// 		drmModeFreeEncoder(encoder);
-	// 		encoder = nullptr;
-	// 	}
-
-	// 	if (encoder != nullptr) {
-	// 		crtcId = encoder->crtc_id;
-	// 	} else {
-	// 		uint32_t crtc_id = findCrtcForConnector(resources, connector);
-	// 		if (crtc_id == 0) {
-	// 			throw std::runtime_error("no crtc found!");
-	// 		}
-	// 		crtc_id = crtc_id;
-	// 	}
-	// 	connectorId = connector->connector_id;
-
-	// 	bufferDevice = gbm_create_device(fd);
-	// 	bufferSurface = gbm_surface_create(bufferDevice,
-	// 		mode->hdisplay, mode->vdisplay,
-	// 		GBM_FORMAT_XRGB8888,
-	// 		GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
-		
-	// 	if (bufferSurface == nullptr) {
-	// 		throw std::runtime_error("failed to create gbm surface");
-	// 	}
-	// }
 
 }

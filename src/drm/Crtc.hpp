@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string>
 #include <cstring>
 #include <stdexcept>
@@ -8,12 +10,13 @@ namespace glplay::drm {
 
   class Crtc {
     public:
-      explicit Crtc(int fileDesc, int crtcId);
+      explicit Crtc(int fileDesc, uint32_t crtcId);
       Crtc(const Crtc& other); //Copy constructor
       Crtc(Crtc&& other) noexcept; //Move constructor
       auto operator=(const Crtc& other) -> Crtc&; //Copy assignment
       auto operator=(Crtc&& other) noexcept -> Crtc&; //Move assignment
       [[nodiscard]] auto operator->() const -> drmModeCrtcPtr { return crtc; }
+      auto isActive() -> bool;
 
       ~Crtc();
     private:

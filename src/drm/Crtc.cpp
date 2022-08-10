@@ -2,7 +2,7 @@
 
 namespace glplay::drm {
   //Constructor
-  Crtc::Crtc(int fileDesc, int crtcId): fileDesc(fileDesc), crtcId(crtcId), crtc(drmModeGetCrtc(fileDesc, crtcId)) {
+  Crtc::Crtc(int fileDesc, uint32_t crtcId): fileDesc(fileDesc), crtcId(crtcId), crtc(drmModeGetCrtc(fileDesc, crtcId)) {
     if (crtc == nullptr) {
 			throw std::runtime_error(std::string("Unable to get crtc: ") + strerror(errno));
 		}
@@ -63,6 +63,10 @@ namespace glplay::drm {
     other.crtcId = -1;
     other.crtc = nullptr;
     return *this;
+  }
+
+  auto Crtc::isActive() -> bool {
+    return crtc->buffer_id != 0;
   }
 
 }
