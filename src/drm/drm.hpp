@@ -55,7 +55,7 @@ namespace glplay::drm {
 		unsigned int num_infos,
 		drmModeObjectProperties *props) {
 		
-		for (int i = 0; i < num_infos; i ++) {
+		for (int i = 0; i < num_infos; i++) {
 			info[i].name = src[i].name;
 			info[i].prop_id = 0;
 			info[i].num_enum_values = src[i].num_enum_values;
