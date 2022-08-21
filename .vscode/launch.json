@@ -14,7 +14,7 @@
               "5672"
             ],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/glplay",
+            "cwd": "${workspaceFolder}/build/debug/",
             "internalConsoleOptions": "openOnSessionStart",
             "environment": [
                 {"name":"DISPLAY", "value":"${env:DISPLAY}"},

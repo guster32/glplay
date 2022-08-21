@@ -4,8 +4,9 @@ set(CMAKE_CXX_COMPILER /usr/bin/clang++) # Yocto does not support clang natively
 # set(CMAKE_C_COMPILER /usr/bin/clang)
 #set(CMAKE_CXX_COMPILER /usr/bin/g++)
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17") # ToDebug with CLang add '-fstandalone-debug' option
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -DCMAKE_EXPORT_COMPILE_COMMANDS=ON")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(POLICY CMP0072)
   cmake_policy(SET CMP0072 NEW)
