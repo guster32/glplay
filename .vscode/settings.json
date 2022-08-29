@@ -15,7 +15,7 @@
 
     /* Yocto SDK Constants */
 		"CC_PREFIX": "${config:ARCADIA_QEMU.OECORE_NATIVE_SYSROOT}/usr/bin/${config:ARCADIA_QEMU.ARCH}/${config:ARCADIA_QEMU.ARCH}-",
-		"CXX": "${config:ARCADIA_QEMU.CC_PREFIX}g++",
-		"CC": "${config:ARCADIA_QEMU.CC_PREFIX}gcc"
+		"CXX": "${config:ARCADIA_QEMU.CC_PREFIX}clang++",
+		"CC": "${config:ARCADIA_QEMU.CC_PREFIX}clang"
   }
 }
