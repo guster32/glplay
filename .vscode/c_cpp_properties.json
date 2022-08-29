@@ -15,7 +15,10 @@
         },
         {
             "name": "Linux",
-            "includePath": [],
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${config:ARCADIA_QEMU.SDKTARGETSYSROOT}/usr/include/**"
+            ],
             "defines": [],
             "compilerPath": "/usr/bin/clang++",
             "cStandard": "c11",

@@ -1,0 +1,21 @@
+{
+  "ARCADIA_QEMU":{
+    /* Target Device Settings */
+    "TARGET_IP":"localhost",
+    "TARGET_USER":"root",
+    "TARGET_SCP_PORT":"10022",
+
+    /* Project Settings */
+    "PROGRAM":"glplay",
+
+    /* Yocto SDK Configuration */
+    "ARCH":"x86_64-arcadia-linux",
+    "OECORE_NATIVE_SYSROOT":"/home/guster32/qemux86-64_sdk/sysroots/x86_64-arcadiasdk-linux",
+    "SDKTARGETSYSROOT":"/home/guster32/qemux86-64_sdk/sysroots/core2-64-arcadia-linux",
+
+    /* Yocto SDK Constants */
+		"CC_PREFIX": "${config:ARCADIA_QEMU.OECORE_NATIVE_SYSROOT}/usr/bin/${config:ARCADIA_QEMU.ARCH}/${config:ARCADIA_QEMU.ARCH}-",
+		"CXX": "${config:ARCADIA_QEMU.CC_PREFIX}g++",
+		"CC": "${config:ARCADIA_QEMU.CC_PREFIX}gcc"
+  }
+}
