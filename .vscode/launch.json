@@ -24,6 +24,22 @@
             "miDebuggerPath": "/usr/local/bin/lldb-mi",
             "MIMode": "lldb",
             "preLaunchTask": "Build"
-        }
+        },
+        {
+            "name": "RemoteDebug GlPlay",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/crossbuild/debug/glplay",
+            "miDebuggerServerAddress": "127.0.0.1:13000",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceRoot}",
+            "environment": [],
+            "externalConsole": true,
+            "linux": {
+              "MIMode": "gdb"
+            },
+            "preLaunchTask": "CrossBuildDeployAndRemoteDebug",
+          }
     ]
 }

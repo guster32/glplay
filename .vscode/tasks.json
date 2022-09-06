@@ -9,21 +9,49 @@
   },
   "tasks": [
     {
-      "label": "CrossBuildAndDeploy",
+      "label": "CrossBuildDeployAndRemoteDebug",
       "dependsOrder": "sequence",
       "dependsOn": [
-        "EnsureDebugCrossBuildOutput",
-        "CleanUpDebugCrossBuildOutput",
-        "CMakeCross_Debug",
-        "CrossBuildd_With_Ninja",
-        "DeployCrossBuild"
+        "CrossBuild",
+        "CrossDeploy",
+        "RemoteDebug"
+      ]
+    },
+    {
+      "label": "RemoteDebug",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "${workspaceFolder}/scripts/launchRemoteGDB.sh"
       ],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "SRC_DIR":"${workspaceFolder}",
+          "ENVIRONMENT_SCRIPT":"${config:ARCADIA_QEMU.ENVIRONMENT_SCRIPT}"
+        }
+      }
+    },
+    {
+      "label": "CrossBuild",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "${workspaceFolder}/scripts/build.sh"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "SRC_DIR":"${workspaceFolder}",
+          "ENVIRONMENT_SCRIPT":"${config:ARCADIA_QEMU.ENVIRONMENT_SCRIPT}"
+        }
+      },
       "problemMatcher": [
         "$gcc"
       ]
     },
     {
-      "label": "DeployCrossBuild",
+      "label": "CrossDeploy",
       "type": "shell",
       "command": "scp",
       "args": [
@@ -51,36 +79,12 @@
       }
     },
     {
-      "label": "EnsureDebugCrossBuildOutput",
-      "type": "shell",
-      "command": "mkdir",
-      "args": [
-        "-p",
-        "${workspaceFolder}/crossbuild/debug"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      }
-    },
-    {
       "label": "CleanUpDebugBuildOutput",
       "type": "shell",
       "command": "rm",
       "args": [
         "-rf",
         "${workspaceFolder}/build/debug/* | true"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      }
-    },
-    {
-      "label": "CleanUpDebugCrossBuildOutput",
-      "type": "shell",
-      "command": "rm",
-      "args": [
-        "-rf",
-        "${workspaceFolder}/crossbuild/debug/* | true"
       ],
       "options": {
         "cwd": "${workspaceFolder}"
@@ -100,22 +104,6 @@
       }
     },
     {
-      "label": "CMakeCross_Debug",
-      "type": "shell",
-      "command": "cmake",
-      "args": [
-        "-DCMAKE_BUILD_TYPE=Debug",
-        "-DCMAKE_CXX_COMPILER=${config:ARCADIA_QEMU.CXX}",
-        "-DCMAKE_C_COMPILER=${config:ARCADIA_QEMU.CC}",
-        "-DCMAKE_SYSROOT=${config:ARCADIA_QEMU.SDKTARGETSYSROOT}",
-        "-GNinja",
-        "../../"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}/crossbuild/debug"
-      }
-    },
-    {
       "label": "Build_With_Ninja",
       "type": "shell",
       "command": "ninja",
@@ -124,17 +112,6 @@
       ],
       "options": {
         "cwd": "${workspaceFolder}/build/debug"
-      }
-    },
-    {
-      "label": "CrossBuildd_With_Ninja",
-      "type": "shell",
-      "command": "ninja",
-      "args": [
-        "-v"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}/crossbuild/debug"
       }
     },
     {
