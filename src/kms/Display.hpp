@@ -34,9 +34,9 @@ namespace glplay::kms {
     private:
       std::string name;
       bool needs_repaint = true;
-      drm::Plane primary_plane;
-      drm::Crtc crtc;
-      drm::Connector connector;
+      drm::Plane& primary_plane;
+      drm::Crtc& crtc;
+      drm::Connector& connector;
       drm::props props;  
       void plane_formats_populate(int adapterFD, drmModeObjectPropertiesPtr props);
       void get_edid(int adapterFD, drmModeObjectPropertiesPtr props);

@@ -22,10 +22,10 @@ namespace glplay::kms {
     this->plane_formats_populate(adapterFD, planeProps);
 
     auto *crtProps = drmModeObjectGetProperties(adapterFD, crtc->crtc_id, DRM_MODE_OBJECT_CRTC);
-    drm::drm_property_info_populate(adapterFD, drm::crtc_props, this->props.plane, drm::crtc_props.size(), crtProps);
+    drm::drm_property_info_populate(adapterFD, drm::crtc_props, this->props.crtc, drm::crtc_props.size(), crtProps);
 
     auto *connectorProps = drmModeObjectGetProperties(adapterFD, connector->connector_id, DRM_MODE_OBJECT_CONNECTOR);
-    drm::drm_property_info_populate(adapterFD, drm::connector_props, this->props.plane, drm::connector_props.size(), connectorProps);
+    drm::drm_property_info_populate(adapterFD, drm::connector_props, this->props.connector, drm::connector_props.size(), connectorProps);
 
     this->get_edid(adapterFD, connectorProps);
 

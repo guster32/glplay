@@ -1,25 +1,112 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 #include <xf86drm.h>
 #include <xf86drmMode.h>
+#include <cassert>
 
 #include <string>
 #include <vector>
 #include <map>
 
 #include "../../third-party/gsl/gsl"
-
-#include "Resources.hpp"
-#include "PlaneResources.hpp"
-#include "Encoder.hpp"
-#include "Plane.hpp"
-#include "Connector.hpp"
-#include "Crtc.hpp"
 #include "PropertyInfo.hpp"
 
-
 namespace glplay::drm {
+
+	//Plane SmartPointer
+	using Plane = std::shared_ptr<drmModePlane>;
+	struct PlaneDeleter {
+		void operator()(drmModePlanePtr handle) {
+			if(handle != nullptr) {
+				drmModeFreePlane(handle);
+			}
+		}
+	};
+	inline auto make_plane_ptr(int fileDesc, uint32_t planeId) -> Plane {
+			auto *handle = drmModeGetPlane(fileDesc, planeId);
+			assert(handle != nullptr);
+			return {handle, PlaneDeleter()};
+	}
+
+
+	//Connector SmartPointer
+	using Connector = std::shared_ptr<drmModeConnector>;
+	struct ConnectorDeleter {
+		void operator()(drmModeConnectorPtr handle) {
+			if(handle != nullptr) {
+				drmModeFreeConnector(handle);
+			}
+		}
+	};
+	inline auto make_connetor_ptr(int fileDesc, uint32_t connectorId) -> Connector {
+		auto *handle = drmModeGetConnector(fileDesc, connectorId);
+		assert(handle != nullptr);
+		return {handle, ConnectorDeleter()};
+	}
+
+	//Crtc SmartPointer
+	using Crtc = std::shared_ptr<drmModeCrtc>;
+	struct CrtcDeleter {
+		void operator()(drmModeCrtcPtr handle) {
+			if(handle != nullptr) {
+				drmModeFreeCrtc(handle);
+			}
+		}
+	};
+	inline auto make_crtc_ptr(int fileDesc, uint32_t crtcId) -> Crtc {
+		auto *handle = drmModeGetCrtc(fileDesc, crtcId);
+		assert(handle != nullptr);
+		return {handle, CrtcDeleter()};
+	};
+
+	//Encoder SmartPointer
+	using Encoder = std::shared_ptr<drmModeEncoder>;
+	struct EncoderDeleter {
+		void operator()(drmModeEncoderPtr handle) {
+			if(handle != nullptr) {
+				drmModeFreeEncoder(handle);
+			}
+		}
+	};
+	inline auto make_encoder_ptr(int fileDesc, uint32_t encoderId) -> Encoder {
+		auto *handle = drmModeGetEncoder(fileDesc, encoderId);
+		assert(handle != nullptr);
+		return {handle, EncoderDeleter()};
+	};
+
+	//Resources SmartPointer
+	using Resources = std::shared_ptr<drmModeRes>;
+	struct ResourcesDeleter {
+		void operator()(drmModeResPtr handle) {
+			if(handle != nullptr) {
+				drmModeFreeResources(handle);
+			}
+		}
+	};
+	inline auto make_resources_ptr(int fileDesc) -> Resources {
+		auto *handle = drmModeGetResources(fileDesc);
+		assert(handle != nullptr);
+		return {handle, ResourcesDeleter()};
+	};
+
+	//PlaneResources SmartPointer
+	using PlaneResources = std::shared_ptr<drmModePlaneRes>;
+	struct PlaneResourcesDeleter {
+		void operator()(drmModePlaneResPtr handle) {
+			if(handle != nullptr) {
+				drmModeFreePlaneResources(handle);
+			}
+		}
+	};
+	inline auto make_plane_resources_ptr(int fileDesc) -> PlaneResources {
+		auto *handle = drmModeGetPlaneResources(fileDesc);
+		assert(handle != nullptr);
+		return {handle, PlaneResourcesDeleter()};
+	};
+
+	
   
 	static const std::map<uint32_t, std::string> connectorTypes { 
 		{DRM_MODE_CONNECTOR_Unknown, "Unknown"},
@@ -50,22 +137,29 @@ namespace glplay::drm {
 	};
 
 	static void drm_property_info_populate(int adapterFD,
-		const std::vector <drm_property_info> src,
-		std::vector<drm_property_info> info,
+		const std::vector <drm_property_info> &src,
+		std::vector<drm_property_info>& info,
 		unsigned int num_infos,
 		drmModeObjectProperties *props) {
 		
 		for (int i = 0; i < num_infos; i++) {
-			info[i].name = src[i].name;
-			info[i].prop_id = 0;
-			info[i].num_enum_values = src[i].num_enum_values;
+			drm_property_info inf;
+			inf.name = src[i].name;
+			inf.prop_id = 0;
+			inf.num_enum_values = src[i].num_enum_values;
 
-			if(info[i].num_enum_values == 0) { continue; }
-			
-			for (int j = 0; j < info[i].num_enum_values; j++) {
-				info[i].enum_values[j].name = src[i].enum_values[j].name;
-				info[i].enum_values[j].valid = false;
+			if(inf.num_enum_values == 0) {
+				info.push_back(inf);
+				continue;
 			}
+			
+			for (int j = 0; j < inf.num_enum_values; j++) {
+				drm_property_enum_info enum_inf{};
+				enum_inf.name = src[i].enum_values[j].name;
+				enum_inf.valid = false;
+				inf.enum_values.push_back(enum_inf);
+			}
+			info.push_back(inf);
 		}
 
 		for(int i = 0; i < props->count_props; i++) {

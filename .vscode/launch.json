@@ -40,6 +40,18 @@
               "MIMode": "gdb"
             },
             "preLaunchTask": "CrossBuildDeployAndRemoteDebug",
+            "setupCommands": [
+              {
+                "description": "Enable pretty-printing for gdb",
+                "text": "python import sys; sys.path.append('/usr/share/gcc-12/python');sys.path.insert(0, '/usr/bin/python');from libstdcxx.v6.printers import register_libstdcxx_printers;register_libstdcxx_printers(None)",
+                "ignoreFailures": false
+              },
+              {
+                  "description": "Enable pretty-printing for gdb",
+                  "text": "-enable-pretty-printing",
+                  "ignoreFailures": true
+              }
+          ]
           }
     ]
 }
