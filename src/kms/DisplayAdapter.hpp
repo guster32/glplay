@@ -20,6 +20,8 @@ namespace glplay::kms {
     
     public:
       explicit DisplayAdapter(std::string &path);
+      [[nodiscard]] auto getAdapterFD() { return adapterFD.fileDescriptor(); }
+      [[nodiscard]] auto hasfbModifiersSupport() const { return supportsFBModifiers; }
     private:
       nix::FileDescriptor adapterFD;
       std::vector<drm::Plane> planes;
