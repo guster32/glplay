@@ -22,7 +22,7 @@
 #include <drm_fourcc.h>
 #include "../nix/nix.hpp"
 #include "../drm/drm.hpp"
-#include "TimeUtil.hpp"
+#include "time.hpp"
 #include "Edid.hpp"
 
 namespace glplay::kms {

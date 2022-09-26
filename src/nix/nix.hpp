@@ -2,4 +2,4 @@
 
 #include "FileDescriptor.hpp"
 #include "log.hpp"
-#include "VirtualTerminal.hpp"
+#include "terminal.hpp"
