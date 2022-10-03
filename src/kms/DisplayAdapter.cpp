@@ -1,4 +1,5 @@
 #include "DisplayAdapter.hpp"
+#include <cstdio>
 
 namespace glplay::kms {
   DisplayAdapter::DisplayAdapter(std::string &path): adapterFD(path, O_RDWR | O_CLOEXEC) {
@@ -52,6 +53,15 @@ namespace glplay::kms {
 		if(displays.empty()) {
 			throw std::runtime_error("Device has not active displays");
 		}
+
+		buffer = glplay::gbm::make_gbm_ptr(fd);
+
+		/////////////TODO: Vulkan //////////////
+		eglDPY = egl::device_egl_setup(buffer.get());
+		supportsFBModifiers &= egl::supports_modifiers();
+    debug("%susing format modifiers\n",(fb_modifiers) ? "" : "not ");
+		/////////////////////////////////////////
+		
   }
 
 	auto DisplayAdapter::findEncoderForConnector(drm::Resources &resources, drm::Connector &connector) -> drm::Encoder {
