@@ -39,10 +39,13 @@ namespace glplay::egl {
     return false;
   }
 
+  inline auto supports_modifiers() -> bool {
+    const char *exts = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
+    return gl_extension_supported(exts, "EGL_EXT_image_dma_buf_import_modifiers");
+  }
 
-
-  inline auto device_egl_setup(gbm_device* gbm, bool fb_modifiers) -> EGLDisplay {
-    EGLDisplay display;
+  inline auto device_egl_setup(gbm_device* gbm) -> EGLDisplay {
+    EGLDisplay display = nullptr;
     // Get supported extensions without considering a display
     const char *exts = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
 
@@ -78,9 +81,6 @@ namespace glplay::egl {
     if (!gl_extension_supported(exts, "EGL_EXT_image_dma_buf_import")) {
       throw std::runtime_error("EGL dmabuf import not supported\n");
     }
-
-    fb_modifiers &= gl_extension_supported(exts, "EGL_EXT_image_dma_buf_import_modifiers");
-    debug("%susing format modifiers\n",(fb_modifiers) ? "" : "not ");
 
     /*
     * At the cost of wasted allocations, we could avoid the need for

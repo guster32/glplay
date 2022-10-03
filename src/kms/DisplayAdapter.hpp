@@ -1,10 +1,12 @@
 #pragma once
 
 #include "drm.h"
+#include <EGL/egl.h>
 #include <cstddef>
 #include <xf86drm.h>
 #include <xf86drmMode.h>
 #include <fcntl.h>
+
 
 #include <cstdio>
 #include <iostream>
@@ -13,6 +15,8 @@
 #include "Display.hpp"
 #include "../drm/drm.hpp"
 #include "../nix/nix.hpp"
+#include "../gbm/gbm.hpp"
+#include "../egl/egl.hpp"
 
 namespace glplay::kms {
   
@@ -21,8 +25,9 @@ namespace glplay::kms {
     public:
       explicit DisplayAdapter(std::string &path);
       [[nodiscard]] auto getAdapterFD() { return adapterFD.fileDescriptor(); }
-      [[nodiscard]] auto hasfbModifiersSupport() const { return supportsFBModifiers; }
     private:
+      EGLDisplay eglDPY;
+      gbm::GBMDevice buffer;
       nix::FileDescriptor adapterFD;
       std::vector<drm::Plane> planes;
       std::vector<Display> displays;

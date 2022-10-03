@@ -14,6 +14,7 @@
 namespace glplay::gbm {
   
   //GBMDevice SmartPointer
+	using GBMDevice = std::shared_ptr<gbm_device>;
 	struct GBMDeviceDeleter {
 		void operator()(gbm_device* handle) {
 			if(handle != nullptr) {
@@ -21,11 +22,10 @@ namespace glplay::gbm {
 			}
 		}
 	};
-	using GBMDevice = std::unique_ptr<gbm_device, GBMDeviceDeleter>;
 	inline auto make_gbm_ptr(int fileDesc) -> GBMDevice {
 			auto *handle = gbm_create_device(fileDesc);
 			assert(handle != nullptr);
-			return GBMDevice(handle);
+			return {handle, GBMDeviceDeleter()};
 	}
 }
 
