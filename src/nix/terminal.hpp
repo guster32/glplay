@@ -139,8 +139,7 @@ namespace glplay::nix {
 		* from being killed on Ctrl-C. */
 		// if (ioctl(vt_fd.fileDescriptor(), KDGKBMODE, &device->saved_kb_mode) != 0 ||
 		// 		ioctl(vt_fd.fileDescriptor(), KDSKBMODE, K_OFF) != 0) {
-		// 	fprintf(stderr, "failed to disable TTY keyboard processing\n");
-		// 	return -errno;
+		// 	throw std::runtime_error("failed to disable TTY keyboard processing");
 		// }
 
 		/* Change the VT into graphics mode, so the kernel no longer prints
