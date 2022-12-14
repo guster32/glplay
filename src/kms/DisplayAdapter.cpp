@@ -1,8 +1,10 @@
 #include "DisplayAdapter.hpp"
 
 namespace glplay::kms {
-  DisplayAdapter::DisplayAdapter(std::string &path): adapterFD(path, O_RDWR | O_CLOEXEC) {
-    
+  DisplayAdapter::DisplayAdapter(std::string &path): adapterFD(path, O_RDWR | O_CLOEXEC),
+		//InitDrmDevice
+		gbmDevice(gbm::make_gbm_ptr(adapterFD.fileDescriptor())),
+		eglDevice(gbmDevice) {
     uint64_t cap = 0;
     drm_magic_t magic = 0;
     auto fd = adapterFD.fileDescriptor();
@@ -21,7 +23,7 @@ namespace glplay::kms {
 		}
     
     err = drmGetCap(fd, DRM_CAP_ADDFB2_MODIFIERS, &cap);
-		supportsFBModifiers = (err == 0 && cap !=0);
+		//supportsFBModifiers = (err == 0 && cap !=0);
 
     auto resources = drm::make_resources_ptr(fd);
     auto planeResources = drm::make_plane_resources_ptr(fd);

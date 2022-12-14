@@ -13,6 +13,8 @@
 #include "Display.hpp"
 #include "../drm/drm.hpp"
 #include "../nix/nix.hpp"
+#include "../gbm/gbm.hpp"
+#include "../egl/egl.hpp"
 
 namespace glplay::kms {
   
@@ -21,12 +23,13 @@ namespace glplay::kms {
     public:
       explicit DisplayAdapter(std::string &path);
       [[nodiscard]] auto getAdapterFD() { return adapterFD.fileDescriptor(); }
-      [[nodiscard]] auto hasfbModifiersSupport() const { return supportsFBModifiers; }
     private:
       nix::FileDescriptor adapterFD;
       std::vector<drm::Plane> planes;
       std::vector<Display> displays;
-      bool supportsFBModifiers = false;
+      gbm::GBMDevice gbmDevice;
+      egl::EGLDevice eglDevice;
+
       auto findEncoderForConnector(drm::Resources &resources, drm::Connector &connector) -> drm::Encoder;
       auto findCrtcForEncoder(drm::Resources &resources, drm::Encoder &encoder) -> drm::Crtc;
       auto findPrimaryPlaneForCrtc(drm::Crtc &crtc) -> drm::Plane;
