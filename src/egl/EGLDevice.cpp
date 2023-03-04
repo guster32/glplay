@@ -311,4 +311,9 @@ namespace glplay::egl {
 
     return EGL_TRUE;
   }
+
+  EGLDevice::~EGLDevice() {
+    eglDestroyContext(egl_dpy, ctx);
+    glDeleteProgram(gl_prog);
+  }
 }

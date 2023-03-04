@@ -32,6 +32,7 @@ namespace glplay::egl {
 
     public:
       explicit EGLDevice(gbm::GBMDevice &gbmDevice);
+      ~EGLDevice();
 
     private:
       bool fb_modifiers;
