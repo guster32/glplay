@@ -33,12 +33,12 @@ namespace glplay::egl {
     public:
       explicit EGLDevice(gbm::GBMDevice &gbmDevice);
       ~EGLDevice();
-
+      EGLDisplay egl_dpy;
+      EGLContext ctx;
     private:
       bool fb_modifiers;
-      EGLDisplay egl_dpy;
+      
 		  EGLConfig cfg;
-		  EGLContext ctx;
 		  GLuint gl_prog;
 		  GLuint pos_attr;
 		  GLuint col_uniform;

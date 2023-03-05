@@ -11,6 +11,8 @@ auto main(int argc, char *argv[]) -> int {
 	
 	//auto egl= glplay::egl::output_egl_setup(display);
 	auto vt_fd = glplay::nix::vt_setup();
+	printf("finished initialization\n");
+	
 	glplay::nix::vt_reset(vt_fd);
   
 	return 0;

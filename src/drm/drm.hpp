@@ -61,6 +61,11 @@ namespace glplay::drm {
 			}
 			info[j].prop_id = props->props[i];
 
+			/* Make sure we don't get mixed up between enum and normal
+		 	* properties. */
+			assert(!!(prop->flags & DRM_MODE_PROP_ENUM) ==
+		       !!info[j].num_enum_values);
+
 			for(int k = 0; k < info[j].num_enum_values; k++) {
 				int l = 0;
 				for(l = 0; l < prop->count_enums; l++) {

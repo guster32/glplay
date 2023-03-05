@@ -23,7 +23,7 @@ namespace glplay::kms {
 		}
     
     err = drmGetCap(fd, DRM_CAP_ADDFB2_MODIFIERS, &cap);
-		//supportsFBModifiers = (err == 0 && cap !=0);
+		bool supportsFBModifiers = (err == 0 && cap !=0);
 
     auto resources = drm::make_resources_ptr(fd);
     auto planeResources = drm::make_plane_resources_ptr(fd);
@@ -49,6 +49,7 @@ namespace glplay::kms {
 			auto plane = findPrimaryPlaneForCrtc(crtc);
 			if(connector->encoder_id != 0 && encoder->encoder_id != 0 && crtc->buffer_id != 0) {
 				displays.emplace_back(fd, connector, crtc, plane);
+				displays.back().createEGLBuffers(fd, supportsFBModifiers, eglDevice, gbmDevice);
 			}
 		}
 		if(displays.empty()) {
