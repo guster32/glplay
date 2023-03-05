@@ -27,8 +27,8 @@
       "options": {
         "cwd": "${workspaceFolder}",
         "env": {
-          "SRC_DIR":"${workspaceFolder}",
-          "ENVIRONMENT_SCRIPT":"${config:ARCADIA_QEMU.ENVIRONMENT_SCRIPT}"
+          "SRC_DIR": "${workspaceFolder}",
+          "ENVIRONMENT_SCRIPT": "${config:ARCADIA_QEMU.ENVIRONMENT_SCRIPT}"
         }
       }
     },
@@ -42,25 +42,31 @@
       "options": {
         "cwd": "${workspaceFolder}",
         "env": {
-          "SRC_DIR":"${workspaceFolder}",
-          "ENVIRONMENT_SCRIPT":"${config:ARCADIA_QEMU.ENVIRONMENT_SCRIPT}"
+          "SRC_DIR": "${workspaceFolder}",
+          "ENVIRONMENT_SCRIPT": "${config:ARCADIA_QEMU.ENVIRONMENT_SCRIPT}"
         }
       },
       "problemMatcher": [
         "$gcc"
-      ]
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
     },
     {
       "label": "CrossDeploy",
       "type": "shell",
       "command": "scp",
       "args": [
-        "-o", "StrictHostKeyChecking=no",
-        "-o", "UserKnownHostsFile=/dev/null",
-        "-P", "${config:ARCADIA_QEMU.TARGET_SCP_PORT}",
+        "-o",
+        "StrictHostKeyChecking=no",
+        "-o",
+        "UserKnownHostsFile=/dev/null",
+        "-P",
+        "${config:ARCADIA_QEMU.TARGET_SCP_PORT}",
         "${workspaceFolder}/crossbuild/debug/glplay",
         "${config:ARCADIA_QEMU.TARGET_USER}@${config:ARCADIA_QEMU.TARGET_IP}:/home/${config:ARCADIA_QEMU.TARGET_USER}/glplay"
-        
       ],
       "options": {
         "cwd": "${workspaceFolder}/crossbuild/debug/"

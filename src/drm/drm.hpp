@@ -8,133 +8,17 @@
 
 #include <string>
 #include <vector>
-#include <map>
 
 #include "../../third-party/gsl/gsl"
 #include "PropertyInfo.hpp"
+#include "Plane.hpp"
+#include "Connector.hpp"
+#include "Crtc.hpp"
+#include "Encoder.hpp"
+#include "PlaneResources.hpp"
+#include "Resources.hpp"
 
 namespace glplay::drm {
-
-	//Plane SmartPointer
-	using Plane = std::shared_ptr<drmModePlane>;
-	struct PlaneDeleter {
-		void operator()(drmModePlanePtr handle) {
-			if(handle != nullptr) {
-				drmModeFreePlane(handle);
-			}
-		}
-	};
-	inline auto make_plane_ptr(int fileDesc, uint32_t planeId) -> Plane {
-			auto *handle = drmModeGetPlane(fileDesc, planeId);
-			assert(handle != nullptr);
-			return {handle, PlaneDeleter()};
-	}
-
-
-	//Connector SmartPointer
-	using Connector = std::shared_ptr<drmModeConnector>;
-	struct ConnectorDeleter {
-		void operator()(drmModeConnectorPtr handle) {
-			if(handle != nullptr) {
-				drmModeFreeConnector(handle);
-			}
-		}
-	};
-	inline auto make_connetor_ptr(int fileDesc, uint32_t connectorId) -> Connector {
-		auto *handle = drmModeGetConnector(fileDesc, connectorId);
-		assert(handle != nullptr);
-		return {handle, ConnectorDeleter()};
-	}
-
-	//Crtc SmartPointer
-	using Crtc = std::shared_ptr<drmModeCrtc>;
-	struct CrtcDeleter {
-		void operator()(drmModeCrtcPtr handle) {
-			if(handle != nullptr) {
-				drmModeFreeCrtc(handle);
-			}
-		}
-	};
-	inline auto make_crtc_ptr(int fileDesc, uint32_t crtcId) -> Crtc {
-		auto *handle = drmModeGetCrtc(fileDesc, crtcId);
-		assert(handle != nullptr);
-		return {handle, CrtcDeleter()};
-	};
-
-	//Encoder SmartPointer
-	using Encoder = std::shared_ptr<drmModeEncoder>;
-	struct EncoderDeleter {
-		void operator()(drmModeEncoderPtr handle) {
-			if(handle != nullptr) {
-				drmModeFreeEncoder(handle);
-			}
-		}
-	};
-	inline auto make_encoder_ptr(int fileDesc, uint32_t encoderId) -> Encoder {
-		auto *handle = drmModeGetEncoder(fileDesc, encoderId);
-		assert(handle != nullptr);
-		return {handle, EncoderDeleter()};
-	};
-
-	//Resources SmartPointer
-	using Resources = std::shared_ptr<drmModeRes>;
-	struct ResourcesDeleter {
-		void operator()(drmModeResPtr handle) {
-			if(handle != nullptr) {
-				drmModeFreeResources(handle);
-			}
-		}
-	};
-	inline auto make_resources_ptr(int fileDesc) -> Resources {
-		auto *handle = drmModeGetResources(fileDesc);
-		assert(handle != nullptr);
-		return {handle, ResourcesDeleter()};
-	};
-
-	//PlaneResources SmartPointer
-	using PlaneResources = std::shared_ptr<drmModePlaneRes>;
-	struct PlaneResourcesDeleter {
-		void operator()(drmModePlaneResPtr handle) {
-			if(handle != nullptr) {
-				drmModeFreePlaneResources(handle);
-			}
-		}
-	};
-	inline auto make_plane_resources_ptr(int fileDesc) -> PlaneResources {
-		auto *handle = drmModeGetPlaneResources(fileDesc);
-		assert(handle != nullptr);
-		return {handle, PlaneResourcesDeleter()};
-	};
-
-	
-  
-	static const std::map<uint32_t, std::string> connectorTypes { 
-		{DRM_MODE_CONNECTOR_Unknown, "Unknown"},
-		{DRM_MODE_CONNECTOR_VGA, "VGA"},
-		{DRM_MODE_CONNECTOR_DVII, "DVI-I"},
-		{DRM_MODE_CONNECTOR_DVID, "DVI-D"},
-		{DRM_MODE_CONNECTOR_DVIA, "DVI-A"},
-		{DRM_MODE_CONNECTOR_Composite, "Composite"},
-		{DRM_MODE_CONNECTOR_SVIDEO, "SVIDEO"},
-		{DRM_MODE_CONNECTOR_LVDS, "LVDS"},
-		{DRM_MODE_CONNECTOR_Component, "Component"},
-		{DRM_MODE_CONNECTOR_9PinDIN, "DIN"},
-		{DRM_MODE_CONNECTOR_DisplayPort, "DP"},
-		{DRM_MODE_CONNECTOR_HDMIA, "HDMI-A"},
-		{DRM_MODE_CONNECTOR_HDMIB, "HDMI-B"},
-		{DRM_MODE_CONNECTOR_TV, "TV"},
-		{DRM_MODE_CONNECTOR_eDP, "eDP"},
-		#ifdef DRM_MODE_CONNECTOR_DSI
-		{DRM_MODE_CONNECTOR_VIRTUAL, "Virtual"},
-		{DRM_MODE_CONNECTOR_DSI, "DSI"},
-		#endif
-		#ifdef DRM_MODE_CONNECTOR_DPI
-		{DRM_MODE_CONNECTOR_DPI, "DPI"},
-		#endif
-		#ifdef DRM_MODE_CONNECTOR_WRITEBACK
-		{DRM_MODE_CONNECTOR_WRITEBACK, "Writeback"}
-		#endif
-	};
 
 	static void drm_property_info_populate(int adapterFD,
 		const std::vector <drm_property_info> &src,
@@ -176,6 +60,11 @@ namespace glplay::drm {
 				continue;
 			}
 			info[j].prop_id = props->props[i];
+
+			/* Make sure we don't get mixed up between enum and normal
+		 	* properties. */
+			assert(!!(prop->flags & DRM_MODE_PROP_ENUM) ==
+		       !!info[j].num_enum_values);
 
 			for(int k = 0; k < info[j].num_enum_values; k++) {
 				int l = 0;
