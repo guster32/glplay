@@ -18,6 +18,7 @@ project(Glplay)
 find_package(PkgConfig)
 find_package(PkgConfig REQUIRED)
 find_package(OpenGLES2 REQUIRED)
+find_package(OpenGLES3 REQUIRED)
 find_package(DRM REQUIRED)
 find_package(GBM REQUIRED)
 
@@ -25,7 +26,7 @@ set(ALL_LIBS
 	${DRM_LIBRARY}
 	${GBM_LIBRARIES}
 	${EGL_LIBRARIES}
-	${OPENGLES2_LIBRARIES}
+	${OPENGLES3_LIBRARIES}
 )
 
 add_definitions(

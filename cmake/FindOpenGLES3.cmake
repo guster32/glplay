@@ -8,9 +8,9 @@
 # - Try to find OpenGLES and EGL
 # Once done this will define
 #
-#  OPENGLES2_FOUND        - system has OpenGLES
-#  OPENGLES2_INCLUDE_DIR  - the GL include directory
-#  OPENGLES2_LIBRARIES    - Link these to use OpenGLES
+#  OPENGLES3_FOUND        - system has OpenGLES
+#  OPENGLES3_INCLUDE_DIR  - the GL include directory
+#  OPENGLES3_LIBRARIES    - Link these to use OpenGLES
 #
 #  EGL_FOUND        - system has EGL
 #  EGL_INCLUDE_DIR  - the EGL include directory
@@ -21,22 +21,22 @@
 
 if(WIN32)
 	if(CYGWIN)
-		find_path(OPENGLES2_INCLUDE_DIR GLES2/gl2.h)
-		find_library(OPENGLES2_LIBRARY libGLESv2)
+		find_path(OPENGLES3_INCLUDE_DIR GLES3/gl3.h)
+		find_library(OPENGLES3_LIBRARY libGLESv3)
 	else()
 		if(BORLAND)
-			set(OPENGLES2_LIBRARY import32 CACHE STRING "OpenGL ES 2.x library for Win32")
+			set(OPENGLES3_LIBRARY import32 CACHE STRING "OpenGL ES 3.x library for Win32")
 		else()
 			# TODO
-			# set(OPENGLES_LIBRARY ${SOURCE_DIR}/Dependencies/lib/release/libGLESv2.lib CACHE STRING "OpenGL ES 2.x library for win32"
+			# set(OPENGLES_LIBRARY ${SOURCE_DIR}/Dependencies/lib/release/libGLESv3.lib CACHE STRING "OpenGL ES 3.x library for win32"
 		endif()
 	endif()
 elseif(APPLE)
 	create_search_paths(/Developer/Platforms)
-	findpkg_framework(OpenGLES2)
-	set(OPENGLES2_LIBRARY "-framework OpenGLES")
+	findpkg_framework(OpenGLES3)
+	set(OPENGLES3_LIBRARY "-framework OpenGLES")
 else()
-	find_path(OPENGLES2_INCLUDE_DIR GLES2/gl2.h
+	find_path(OPENGLES3_INCLUDE_DIR GLES3/gl3.h
 		PATHS /usr/openwin/share/include
 			/opt/graphics/OpenGL/include
 			/opt/vc/include
@@ -44,19 +44,8 @@ else()
 			/usr/include
 	)
 
-	find_library(OPENGLES2_LIBRARY
-		NAMES GLESv2
-		PATHS /opt/graphics/OpenGL/lib
-			/usr/openwin/lib
-			/usr/shlib /usr/X11R6/lib
-			/opt/vc/lib
-			/usr/lib/aarch64-linux-gnu
-			/usr/lib/arm-linux-gnueabihf
-			/usr/lib
-	)
-
-	find_library(OPENGLES1_gl_LIBRARY
-		NAMES GLESv1_CM
+	find_library(OPENGLES3_LIBRARY
+		NAMES GLESv3
 		PATHS /opt/graphics/OpenGL/lib
 			/usr/openwin/lib
 			/usr/shlib /usr/X11R6/lib
@@ -90,53 +79,46 @@ else()
 		# On Unix OpenGL usually requires X11.
 		# It doesn't require X11 on OSX.
 
-		# if(OPENGLES2_LIBRARY)
-		# 	if(NOT X11_FOUND)
-		# 		include(FindX11)
-		# 	endif()
-		# 	if(X11_FOUND)		# if(OPENGLES2_LIBRARY)
+		# if(OPENGLES3_LIBRARY)
 		# 	if(NOT X11_FOUND)
 		# 		include(FindX11)
 		# 	endif()
 		# 	if(X11_FOUND)
-		# 		set(OPENGLES2_LIBRARIES ${X11_LIBRARIES})
-		# 	endif()
-		# endif()
-		# 		set(OPENGLES2_LIBRARIES ${X11_LIBRARIES})
+		# 		set(OPENGLES3_LIBRARIES ${X11_LIBRARIES})
 		# 	endif()
 		# endif()
 	endif()
 endif()
 
-set(OPENGLES2_LIBRARIES ${OPENGLES2_LIBRARIES} ${OPENGLES2_LIBRARY} ${OPENGLES1_gl_LIBRARY})
+set(OPENGLES3_LIBRARIES ${OPENGLES3_LIBRARIES} ${OPENGLES3_LIBRARY} ${OPENGLES1_gl_LIBRARY})
 
 if(BUILD_ANDROID)
-	if(OPENGLES2_LIBRARY)
+	if(OPENGLES3_LIBRARY)
 		set(EGL_LIBRARIES)
-		set(OPENGLES2_FOUND TRUE)
+		set(OPENGLES3_FOUND TRUE)
 	endif()
 else()
-	if(OPENGLES2_LIBRARY AND EGL_LIBRARY)
-		set(OPENGLES2_LIBRARIES ${OPENGLES2_LIBRARY} ${OPENGLES2_LIBRARIES})
+	if(OPENGLES3_LIBRARY AND EGL_LIBRARY)
+		set(OPENGLES3_LIBRARIES ${OPENGLES3_LIBRARY} ${OPENGLES3_LIBRARIES})
 		set(EGL_LIBRARIES ${EGL_LIBRARY} ${EGL_LIBRARIES})
-		set(OPENGLES2_FOUND TRUE)
+		set(OPENGLES3_FOUND TRUE)
 	endif()
 endif()
 
 mark_as_advanced(
-	OPENGLES2_INCLUDE_DIR
-	OPENGLES2_LIBRARY
+	OPENGLES3_INCLUDE_DIR
+	OPENGLES3_LIBRARY
 	# OPENGLES1_gl_LIBRARY
 	EGL_INCLUDE_DIR
 	EGL_LIBRARY
 )
 
-if(OPENGLES2_FOUND)
-	message(STATUS "Found system OpenGL ES 2 library: ${OPENGLES2_LIBRARIES}")
+if(OPENGLES3_FOUND)
+	message(STATUS "Found system OpenGL ES 3 library: ${OPENGLES3_LIBRARIES}")
 else()
-	set(OPENGLES2_LIBRARIES "")
+	set(OPENGLES3_LIBRARIES "")
 endif()
 
 # Handle the results of the library search
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(OpenGLES2 DEFAULT_MSG OPENGLES2_LIBRARY OPENGLES2_INCLUDE_DIR EGL_INCLUDE_DIR EGL_LIBRARY)
+find_package_handle_standard_args(OpenGLES3 DEFAULT_MSG OPENGLES3_LIBRARY OPENGLES3_INCLUDE_DIR EGL_INCLUDE_DIR EGL_LIBRARY)

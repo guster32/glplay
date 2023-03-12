@@ -11,13 +11,14 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
-#if defined(HAVE_GL_CORE)
-#include <GL/gl.h>
-#include <GL/glext.h>
-#else
 #include <GLES3/gl3.h>
 #include <GLES3/gl3ext.h>
-#endif
+/*
+ * GLES2 exts is needed for prototypes of GL_OES_EGL_image
+ * (i.e. glEGLImageTargetTexture2DOES etc.)
+ */
+#include <GLES2/gl2ext.h>
+
 #include "drm_mode.h"
 #include <drm_fourcc.h>
 #include "../nix/nix.hpp"
