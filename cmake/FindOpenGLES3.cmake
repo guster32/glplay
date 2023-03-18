@@ -22,10 +22,10 @@
 if(WIN32)
 	if(CYGWIN)
 		find_path(OPENGLES3_INCLUDE_DIR GLES3/gl3.h)
-		find_library(OPENGLES3_LIBRARY libGLESv3)
+		find_library(OPENGLES2_LIBRARY libGLESv2)
 	else()
 		if(BORLAND)
-			set(OPENGLES3_LIBRARY import32 CACHE STRING "OpenGL ES 3.x library for Win32")
+			set(OPENGLES2_LIBRARY import32 CACHE STRING "OpenGL ES 3.x library for Win32")
 		else()
 			# TODO
 			# set(OPENGLES_LIBRARY ${SOURCE_DIR}/Dependencies/lib/release/libGLESv3.lib CACHE STRING "OpenGL ES 3.x library for win32"
@@ -34,7 +34,7 @@ if(WIN32)
 elseif(APPLE)
 	create_search_paths(/Developer/Platforms)
 	findpkg_framework(OpenGLES3)
-	set(OPENGLES3_LIBRARY "-framework OpenGLES")
+	set(OPENGLES2_LIBRARY "-framework OpenGLES")
 else()
 	find_path(OPENGLES3_INCLUDE_DIR GLES3/gl3.h
 		PATHS /usr/openwin/share/include
@@ -44,8 +44,8 @@ else()
 			/usr/include
 	)
 
-	find_library(OPENGLES3_LIBRARY
-		NAMES GLESv3
+	find_library(OPENGLES2_LIBRARY ## GLES 3 api is provided by glesv2 lib
+		NAMES GLESv2
 		PATHS /opt/graphics/OpenGL/lib
 			/usr/openwin/lib
 			/usr/shlib /usr/X11R6/lib
@@ -79,7 +79,7 @@ else()
 		# On Unix OpenGL usually requires X11.
 		# It doesn't require X11 on OSX.
 
-		# if(OPENGLES3_LIBRARY)
+		# if(OPENGLES2_LIBRARY)
 		# 	if(NOT X11_FOUND)
 		# 		include(FindX11)
 		# 	endif()
@@ -90,16 +90,16 @@ else()
 	endif()
 endif()
 
-set(OPENGLES3_LIBRARIES ${OPENGLES3_LIBRARIES} ${OPENGLES3_LIBRARY} ${OPENGLES1_gl_LIBRARY})
+set(OPENGLES3_LIBRARIES ${OPENGLES3_LIBRARIES} ${OPENGLES2_LIBRARY} ${OPENGLES1_gl_LIBRARY})
 
 if(BUILD_ANDROID)
-	if(OPENGLES3_LIBRARY)
+	if(OPENGLES2_LIBRARY)
 		set(EGL_LIBRARIES)
 		set(OPENGLES3_FOUND TRUE)
 	endif()
 else()
-	if(OPENGLES3_LIBRARY AND EGL_LIBRARY)
-		set(OPENGLES3_LIBRARIES ${OPENGLES3_LIBRARY} ${OPENGLES3_LIBRARIES})
+	if(OPENGLES2_LIBRARY AND EGL_LIBRARY)
+		set(OPENGLES3_LIBRARIES ${OPENGLES2_LIBRARY} ${OPENGLES3_LIBRARIES})
 		set(EGL_LIBRARIES ${EGL_LIBRARY} ${EGL_LIBRARIES})
 		set(OPENGLES3_FOUND TRUE)
 	endif()
@@ -107,7 +107,7 @@ endif()
 
 mark_as_advanced(
 	OPENGLES3_INCLUDE_DIR
-	OPENGLES3_LIBRARY
+	OPENGLES2_LIBRARY
 	# OPENGLES1_gl_LIBRARY
 	EGL_INCLUDE_DIR
 	EGL_LIBRARY
@@ -121,4 +121,4 @@ endif()
 
 # Handle the results of the library search
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(OpenGLES3 DEFAULT_MSG OPENGLES3_LIBRARY OPENGLES3_INCLUDE_DIR EGL_INCLUDE_DIR EGL_LIBRARY)
+find_package_handle_standard_args(OpenGLES3 DEFAULT_MSG OPENGLES2_LIBRARY OPENGLES3_INCLUDE_DIR EGL_INCLUDE_DIR EGL_LIBRARY)
