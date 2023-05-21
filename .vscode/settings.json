@@ -10,7 +10,7 @@
 
     /* Yocto SDK Configuration */
     "ARCH":"x86_64-arcadia-linux",
-    "SDK_DIR":"/home/gustavobranco/qemux86-64_sdk",
+    "SDK_DIR":"${env:HOME}/qemux86-64_sdk",
     "ENVIRONMENT_SCRIPT":"${config:ARCADIA_QEMU.SDK_DIR}/environment-setup-core2-64-arcadia-linux",
     "OECORE_NATIVE_SYSROOT":"${config:ARCADIA_QEMU.SDK_DIR}/sysroots/x86_64-arcadiasdk-linux",
     "SDKTARGETSYSROOT":"${config:ARCADIA_QEMU.SDK_DIR}/sysroots/core2-64-arcadia-linux",
