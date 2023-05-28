@@ -62,18 +62,18 @@ namespace glplay::kms {
     *
     * 0 is always an invalid framebuffer id.
     */
-    uint32_t fb_id{};
+    uint32_t fb_id;
 
     /*
     * dma_fence FD for completion of the rendering to this buffer.
     */
-    int render_fence_fd{};
+    int render_fence_fd;
 
     /*
     * dma_fence FD for completion of the last KMS commit this buffer
     * was used in.
     */
-    int kms_fence_fd{};
+    int kms_fence_fd ;
 
     /*
     * The format and modifier together describe how the image is laid

@@ -40,7 +40,7 @@ namespace glplay::egl {
     * rendering completion), and to be able to import dma_fence FDs to
     * EGLSync objects to give to GL, so it can wait on KMS completion.
     */
-	  auto explicit_fencing =
+	  explicit_fencing =
 		(gl_extension_supported(exts_with_display, "EGL_KHR_fence_sync") &&
 		 gl_extension_supported(exts_with_display, "EGL_KHR_wait_sync") &&
 		 gl_extension_supported(exts_with_display, "EGL_ANDROID_native_fence_sync"));

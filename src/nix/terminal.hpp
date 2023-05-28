@@ -124,7 +124,7 @@ namespace glplay::nix {
 		}
 		assert(tty_num != 0);
 
-		printf("using VT %d\n", tty_num);
+		debug("using VT %d\n", tty_num);
 
 		/* Switch to the target VT. */
 		if (ioctl(vt_fd.fileDescriptor(), VT_ACTIVATE, tty_num) != 0 ||

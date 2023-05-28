@@ -33,6 +33,7 @@ namespace glplay::egl {
 		  GLuint col_uniform;
 		  GLuint vbo;
 		  GLuint vao;
+      bool explicit_fencing;
   
     private:
       bool fb_modifiers;

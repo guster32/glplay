@@ -152,7 +152,7 @@ static void atomic_event_handler(int fd,
 	assert(display->bufferPending);
 	assert(display->bufferPending->in_use);
 
-	if (display->explicitFencing) {
+	if (display->explicitFencing && adapter->eglDevice.explicit_fencing) {
 		/*
 		 * Print the time that the KMS fence FD signaled, i.e. when the
 		 * last commit completed. It should be the same time as passed
@@ -309,7 +309,7 @@ inline auto buffer_egl_fill(glplay::kms::DisplayAdapter *adapter, glplay::kms::D
             adapter->eglDevice.ctx);
     assert(ret);
 
-    if (display->explicitFencing) {
+    if (display->explicitFencing && adapter->eglDevice.explicit_fencing) {
       if (!create_sync) {
         create_sync = (PFNEGLCREATESYNCKHRPROC)
           eglGetProcAddress("eglCreateSyncKHR");
@@ -397,13 +397,13 @@ inline auto buffer_egl_fill(glplay::kms::DisplayAdapter *adapter, glplay::kms::D
     * This flush also acts as our guarantee when using implicit fencing
     * that the rendering will actually be issued.
     */
-    if (display->explicitFencing) {
+    if (display->explicitFencing && adapter->eglDevice.explicit_fencing) {
       EGLint attribs[] = {
         EGL_SYNC_NATIVE_FENCE_FD_ANDROID, EGL_NO_NATIVE_FENCE_FD_ANDROID,
         EGL_NONE,
       };
 
-      sync = create_sync(&adapter->eglDevice.egl_dpy,
+      sync = create_sync(adapter->eglDevice.egl_dpy,
             EGL_SYNC_NATIVE_FENCE_ANDROID,
             attribs);
 	  auto err = eglGetError();
@@ -417,7 +417,7 @@ inline auto buffer_egl_fill(glplay::kms::DisplayAdapter *adapter, glplay::kms::D
     * Now we've flushed, we can get the fence FD associated with our
     * rendering, which we can pass to KMS to wait for.
     */
-    if (display->explicitFencing) {
+    if (display->explicitFencing && adapter->eglDevice.explicit_fencing) {
       int fd = dup_fence_fd(adapter->eglDevice.egl_dpy, sync);
       assert(fd >= 0);
       assert(linux_sync_file_is_valid(fd));
@@ -652,7 +652,7 @@ auto main(int argc, char *argv[]) -> int {
 		 * buffer is free to reuse again.
 		 */
 		for (auto &display : adapter.displays) {  
-			if (display.explicitFencing && display.bufferLast) {
+			if (display.explicitFencing && adapter.eglDevice.explicit_fencing && display.bufferLast) {
 				assert(linux_sync_file_is_valid(display.commitFenceFD));
 				fd_replace(&display.bufferLast->kms_fence_fd,
 					   display.commitFenceFD);
