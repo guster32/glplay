@@ -288,7 +288,7 @@ static void fill_verts(GLfloat *verts, GLfloat *col, int frame_num, int loc)
 	verts[7] = bottom;
 }
 
-inline auto buffer_egl_fill(glplay::kms::DisplayAdapter *adapter, glplay::kms::Display *display) -> void {
+inline auto buffer_egl_fill(glplay::kms::DisplayAdapter *adapter, glplay::kms::Display *display) -> glplay::kms::Buffer* {
     static PFNEGLCREATESYNCKHRPROC create_sync = NULL;
     static PFNEGLWAITSYNCKHRPROC wait_sync = NULL;
     static PFNEGLDESTROYSYNCKHRPROC destroy_sync = NULL;
@@ -425,11 +425,10 @@ inline auto buffer_egl_fill(glplay::kms::DisplayAdapter *adapter, glplay::kms::D
       destroy_sync(adapter->eglDevice.egl_dpy, sync);
     }
 
-	/* Add the output's new state to the atomic modesetting request. */
-	// output_add_atomic_req(display, req, buffer);
 	buffer->in_use = true;
 	display->bufferPending = buffer;
 	display->needs_repaint = false;
+	return buffer;
 }
 
 
@@ -437,7 +436,7 @@ inline auto buffer_egl_fill(glplay::kms::DisplayAdapter *adapter, glplay::kms::D
  * Using the CPU mapping, fill the buffer with a simple pixel-by-pixel
  * checkerboard; the boundaries advance from top-left to bottom-right.
  */
-void buffer_fill(glplay::kms::DisplayAdapter *adapter, glplay::kms::Display *display) {
+auto buffer_fill(glplay::kms::DisplayAdapter *adapter, glplay::kms::Display *display) -> glplay::kms::Buffer* {
 	
 	
 	// if (buffer->gbm.bo) {
@@ -445,10 +444,10 @@ void buffer_fill(glplay::kms::DisplayAdapter *adapter, glplay::kms::Display *dis
 			// TODO: handle return value
 			// buffer_vk_fill(buffer, frame_num);
 		// } else {
-			buffer_egl_fill(adapter, display);
+			auto buff = buffer_egl_fill(adapter, display);
 		// }
 
-		return;
+		return buff;
 	// }
 
 	// for (unsigned int y = 0; y < buffer->height; y++) {
@@ -478,6 +477,149 @@ void buffer_fill(glplay::kms::DisplayAdapter *adapter, glplay::kms::Display *dis
 	// }
 }
 
+/* Sets a plane property inside an atomic request. */
+static int
+plane_add_prop(drmModeAtomicReq *req, glplay::kms::Display * display,
+	       enum glplay::drm::wdrm_plane_property prop, uint64_t val)
+{
+	auto info = &display->props.plane[prop];
+	int ret;
+
+	if (info->prop_id == 0)
+		return -1;
+
+	ret = drmModeAtomicAddProperty(req, display->primary_plane->plane_id,
+				       info->prop_id, val);
+	debug("\t[PLANE:%lu] %lu (%s) -> %llu (0x%llx)\n",
+	      (unsigned long) display->primary_plane->plane_id,
+	      (unsigned long) info->prop_id, info->name,
+	      (unsigned long long) val, (unsigned long long) val);
+	return (ret <= 0) ? -1 : 0;
+}
+
+
+/* Sets a CRTC property inside an atomic request. */
+static int
+crtc_add_prop(drmModeAtomicReq *req, glplay::kms::Display * display,
+	      enum glplay::drm::wdrm_crtc_property prop, uint64_t val)
+{
+	auto info = &display->props.crtc[prop];
+	int ret;
+
+	if (info->prop_id == 0)
+		return -1;
+
+	ret = drmModeAtomicAddProperty(req, display->crtc->crtc_id, info->prop_id,
+				       val);
+	debug("\t[CRTC:%lu] %lu (%s) -> %llu (0x%llx)\n",
+	      (unsigned long) display->crtc->crtc_id,
+	      (unsigned long) info->prop_id, info->name,
+	      (unsigned long long) val, (unsigned long long) val);
+	return (ret <= 0) ? -1 : 0;
+}
+
+/* Sets a connector property inside an atomic request. */
+static int
+connector_add_prop(drmModeAtomicReq *req, glplay::kms::Display * display,
+		   enum glplay::drm::wdrm_connector_property prop, uint64_t val)
+{
+	auto info = &display->props.crtc[prop];
+	int ret;
+
+	if (info->prop_id == 0)
+		return -1;
+
+	ret = drmModeAtomicAddProperty(req, display->connector->connector_id,
+				       info->prop_id, val);
+	debug("\t[CONN:%lu] %lu (%s) -> %llu (0x%llx)\n",
+	      (unsigned long) display->connector->connector_id,
+	      (unsigned long) info->prop_id, info->name,
+	      (unsigned long long) val, (unsigned long long) val);
+	return (ret <= 0) ? -1 : 0;
+}
+
+/*
+ * Populates an atomic request structure with this output's current
+ * configuration.
+ *
+ * Atomic requests are applied incrementally on top of the current state, so
+ * there is no need here to apply the entire output state, except on the first
+ * modeset if we are changing the display routing (per output_create comments).
+ */
+void output_add_atomic_req(glplay::kms::Display * display, drmModeAtomicReqPtr req,
+			   glplay::kms::Buffer *buffer)
+{
+	int ret;
+
+	debug("[%s] atomic state for commit:\n", display->name.c_str());
+
+	ret = plane_add_prop(req, display, glplay::drm::WDRM_PLANE_CRTC_ID, display->crtc->crtc_id);
+
+	/*
+	 * SRC_X/Y/W/H are the co-ordinates to use as the dimensions of the
+	 * framebuffer source: you can use these to crop an image. Source
+	 * co-ordinates are in 16.16 fixed-point to allow for better scaling;
+	 * as we just use a full-size uncropped image, we don't need this.
+	 */
+	ret |= plane_add_prop(req, display, glplay::drm::WDRM_PLANE_FB_ID, buffer->fb_id);
+	//TODO: need adapter here to replace false.
+	if (display->explicitFencing && false && buffer->render_fence_fd >= 0) {
+		assert(linux_sync_file_is_valid(buffer->render_fence_fd));
+		ret |= plane_add_prop(req, display, glplay::drm::WDRM_PLANE_IN_FENCE_FD,
+				      buffer->render_fence_fd);
+	}
+	ret |= plane_add_prop(req, display, glplay::drm::WDRM_PLANE_SRC_X, 0);
+	ret |= plane_add_prop(req, display, glplay::drm::WDRM_PLANE_SRC_Y, 0);
+	ret |= plane_add_prop(req, display, glplay::drm::WDRM_PLANE_SRC_W,
+			      buffer->width << 16);
+	ret |= plane_add_prop(req, display, glplay::drm::WDRM_PLANE_SRC_H,
+			      buffer->height << 16);
+
+	/*
+	 * DST_X/Y/W/H position the plane's display within the CRTC's display
+	 * space; these positions are plain integer, as it makes no sense for
+	 * display positions to be expressed in subpixels.
+	 *
+	 * Anyway, we just use a full-screen buffer with no scaling.
+	 */
+	ret |= plane_add_prop(req, display, glplay::drm::WDRM_PLANE_CRTC_X, 0);
+	ret |= plane_add_prop(req, display, glplay::drm::WDRM_PLANE_CRTC_Y, 0);
+	ret |= plane_add_prop(req, display, glplay::drm::WDRM_PLANE_CRTC_W, buffer->width);
+	ret |= plane_add_prop(req, display, glplay::drm::WDRM_PLANE_CRTC_H, buffer->height);
+
+	/* Ensure we do actually have a full-screen buffer. */
+	assert(buffer->width == display->mode.hdisplay);
+	assert(buffer->height == display->mode.vdisplay);
+
+	/*
+	 * Changing any of these three properties requires the ALLOW_MODESET
+	 * flag to be set on the atomic commit.
+	 */
+	ret |= crtc_add_prop(req, display, glplay::drm::WDRM_CRTC_MODE_ID,
+			     display->mode_blob_id);
+	ret |= crtc_add_prop(req, display, glplay::drm::WDRM_CRTC_ACTIVE, 1);
+
+	//TODO: add adapter to fix false.
+	if (display->explicitFencing && false) {
+		if (display->commitFenceFD >= 0)
+			close(display->commitFenceFD);
+		display->commitFenceFD = -1;
+
+		/*
+		 * OUT_FENCE_PTR takes a pointer as a value, which the kernel
+		 * fills in at commit time. The fence signals when the commit
+		 * completes, i.e. when the event we request is sent.
+		 */
+		ret |= crtc_add_prop(req, display, glplay::drm::WDRM_CRTC_OUT_FENCE_PTR,
+				     (uint64_t) (uintptr_t) &display->commitFenceFD);
+	}
+
+	ret |= connector_add_prop(req, display, glplay::drm::WDRM_CONNECTOR_CRTC_ID,
+				  display->crtc->crtc_id);
+
+	assert(ret == 0);
+}
+
 static void repaint_one_output(glplay::kms::DisplayAdapter &adapter, glplay::kms::Display &display, drmModeAtomicReqPtr req, bool *needs_modeset)
 {
 	struct timespec now;
@@ -487,8 +629,10 @@ static void repaint_one_output(glplay::kms::DisplayAdapter &adapter, glplay::kms
 	assert(ret == 0);
 
 	advance_frame(&display, &now);
-	buffer_fill(&adapter, &display);
+	auto buffer = buffer_fill(&adapter, &display);
 
+	/* Add the output's new state to the atomic modesetting request. */
+	output_add_atomic_req(&display, req, buffer);
 
 	/*
 	 * If this output hasn't been painted before, then we need to set
@@ -496,8 +640,9 @@ static void repaint_one_output(glplay::kms::DisplayAdapter &adapter, glplay::kms
 	 * have already presented to this output, then we don't need to since
 	 * our configuration is similar enough.
 	 */
-	if (glplay::kms::timespec_to_nsec(&display.last_frame) == 0UL)
+	if (glplay::kms::timespec_to_nsec(&display.last_frame) == 0UL) {
 		*needs_modeset = true;
+	}
 
 	if (glplay::kms::timespec_to_nsec(&display.next_frame) != 0UL) {
 		debug("[%s] predicting presentation at %" PRIu64 " (%" PRIu64 "ns / %" PRIu64 "ms away)\n",
@@ -576,7 +721,7 @@ auto main(int argc, char *argv[]) -> int {
 		bool needs_modeset = false;
 		int output_count = 0;
 		int ret = 0;
-				drmEventContext evctx = {
+		drmEventContext evctx = {
 			.version = 3,
 			.page_flip_handler2 = atomic_event_handler,
 		};

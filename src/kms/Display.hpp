@@ -149,11 +149,13 @@ namespace glplay::kms {
       std::vector<Buffer> buffers;
       drm::Crtc& crtc;
       std::string name;
-
-    private:
       drm::Plane& primary_plane;
       drm::Connector& connector;
-      drm::props props;  
+      drm::props props;
+      uint32_t mode_blob_id = 0;
+      drmModeModeInfo mode;
+
+    private:
       void plane_formats_populate(int adapterFD, drmModeObjectPropertiesPtr props);
       void get_edid(int adapterFD, drmModeObjectPropertiesPtr props);
       auto createEGLBuffer(int adapterFD, bool adapterSupportsFBModifiers, egl::EGLDevice &eglDevice, gbm::GBMDevice &gbmDevice) -> Buffer;
@@ -162,8 +164,6 @@ namespace glplay::kms {
 
       //   /* Supported format modifiers for XRGB8888. */
       std::vector<uint64_t> modifiers;
-      uint32_t mode_blob_id = 0;
-      drmModeModeInfo mode;
 
     //         /*
     //   * Time the last frame's commit completed from KMS, and when the
