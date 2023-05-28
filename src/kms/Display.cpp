@@ -80,7 +80,7 @@ namespace glplay::kms {
       for (int i = 0; buffer.gem_handles.at(i); i++) {
         buffer_modifiers.at(i) = buffer.modifier;
         debug("[GEM:%" PRIu32 "]: %u x %u %s buffer (plane %d), pitch %u\n",
-              buffer.gem_handles.at(i), ret->width, ret->height,
+              buffer.gem_handles.at(i), buffer.width, buffer.height,
               "GBM",
               i, buffer.pitches.at(i));
       }
@@ -129,7 +129,7 @@ namespace glplay::kms {
       }
 
       if (err != 0 || buffer.fb_id == 0) {
-        fprintf(stderr, "failed AddFB2 on %u x %u %s (modifier 0x%" PRIx64 ") buffer: %s\n",
+        error("failed AddFB2 on %u x %u %s (modifier 0x%" PRIx64 ") buffer: %s\n",
           buffer.width, buffer.height,
           "GBM",
           buffer.modifier, strerror(errno));
@@ -374,7 +374,7 @@ namespace glplay::kms {
 
 	  blob_id = drm_property_get_value(&this->props.connector.at(drm::WDRM_CONNECTOR_EDID), props, 0);
     if (blob_id == 0) {
-      debug("[%s] output does not have EDID\n", output->name);
+      debug("[%s] output does not have EDID\n", this->name.c_str());
       return;
     }
 
@@ -384,8 +384,8 @@ namespace glplay::kms {
     drmModeFreePropertyBlob(blob);
 
     debug("[%s] EDID PNP ID %s, EISA ID %s, name %s, serial %s\n",
-      output->name, edid->pnp_id, edid->eisa_id,
-      edid->monitor_name, edid->serial_number);
+      this->name.c_str(), edid.pnp_id.data(), edid.eisa_id.data(),
+      edid.monitor_name.data(), edid.serial_number.data());
       
   }
 
@@ -395,7 +395,7 @@ namespace glplay::kms {
     uint32_t blob_id = drm::drm_property_get_value(&this->props.plane.at(drm::WDRM_PLANE_IN_FORMATS), props, 0);
 
     if(blob_id == 0) {
-      debug("[%s] plane does not have IN_FORMATS\n", this->name);
+      debug("[%s] plane does not have IN_FORMATS\n", this->name.c_str());
 		  return;
     }
     

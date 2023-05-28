@@ -30,15 +30,16 @@ namespace glplay::egl {
       ~EGLDevice();
       EGLDisplay egl_dpy;
       EGLContext ctx;
+		  GLuint col_uniform;
+		  GLuint vbo;
+		  GLuint vao;
+  
     private:
       bool fb_modifiers;
       
 		  EGLConfig cfg;
 		  GLuint gl_prog;
 		  GLuint pos_attr;
-		  GLuint col_uniform;
-		  GLuint vbo;
-		  GLuint vao;
 		  /* Whether to use big OpenGL Core Profile context or to use GLES */
 		  bool gl_core;
 

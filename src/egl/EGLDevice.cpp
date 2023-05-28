@@ -7,7 +7,7 @@ namespace glplay::egl {
     const char* exts_with_display = eglQueryString(egl_dpy, EGL_EXTENSIONS);
     assert(exts_with_display);
     fb_modifiers &= gl_extension_supported(exts_with_display, "EGL_EXT_image_dma_buf_import_modifiers");
-    debug("%susing format modifiers\n",(fb_modifier) ? "" : "not ");
+    debug("%susing format modifiers\n",(fb_modifiers) ? "" : "not ");
 
     /*
     * dmabuf import is required, since we allocate our
@@ -301,7 +301,7 @@ namespace glplay::egl {
             char log[1000];
             GLsizei len;
             glGetShaderInfoLog(shader, 1000, &len, log);
-            fprintf(stderr, "Error: compiling %s: %*s\n",
+            error("Error: compiling %s: %*s\n",
                     shader_type == GL_VERTEX_SHADER ? "vertex" : "fragment",
                     len, log);
             return EGL_FALSE;

@@ -90,12 +90,12 @@ namespace glplay::nix {
 			std::string tty0_str = "/dev/tty0";
 			auto tty0 = FileDescriptor(tty0_str, O_WRONLY | O_CLOEXEC);
 			if (tty0.fileDescriptor() < 0) {
-				fprintf(stderr, "couldn't open /dev/tty0\n");
+				error("couldn't open /dev/tty0\n");
 				throw std::runtime_error("Failed to open TTY");
 			}
 
 			if (ioctl(tty0.fileDescriptor(), VT_OPENQRY, &tty_num) < 0 || tty_num < 0) {
-				fprintf(stderr, "couldn't get free TTY\n");
+				error("couldn't get free TTY\n");
 				throw std::runtime_error("Failed to free TTY");
 			}
 			sprintf(tty_dev.data(), "/dev/tty%d", tty_num);
@@ -105,7 +105,7 @@ namespace glplay::nix {
 		auto test = std::string(tty_dev.data());
 		auto vt_fd = FileDescriptor(test, O_RDWR | O_NOCTTY);
 		if (vt_fd.fileDescriptor() < 0) {
-			fprintf(stderr, "failed to open VT %d\n", tty_num);
+			error("failed to open VT %d\n", tty_num);
 			throw std::runtime_error("Failed to open VT");
 		}
 
@@ -116,7 +116,7 @@ namespace glplay::nix {
 
 			if (fstat(vt_fd.fileDescriptor(), &buf) == -1 ||
 					major(buf.st_rdev) != TTY_MAJOR) {
-				fprintf(stderr, "VT file %s is bad\n", tty_dev.data());
+				error("VT file %s is bad\n", tty_dev.data());
 				throw std::runtime_error("Bad VT file");
 			}
 
@@ -129,7 +129,7 @@ namespace glplay::nix {
 		/* Switch to the target VT. */
 		if (ioctl(vt_fd.fileDescriptor(), VT_ACTIVATE, tty_num) != 0 ||
 				ioctl(vt_fd.fileDescriptor(), VT_WAITACTIVE, tty_num) != 0) {
-			fprintf(stderr, "couldn't switch to VT %d\n", tty_num);
+			error("couldn't switch to VT %d\n", tty_num);
 			throw std::runtime_error("Failed to switch to target VT");
 		}
 
@@ -145,7 +145,7 @@ namespace glplay::nix {
 		/* Change the VT into graphics mode, so the kernel no longer prints
 		* text out on top of us. */
 		if (ioctl(vt_fd.fileDescriptor(), KDSETMODE, KD_GRAPHICS) != 0) {
-			fprintf(stderr, "failed to switch TTY to graphics mode\n");
+			error("failed to switch TTY to graphics mode\n");
 			throw std::runtime_error("Failed to switch to graphics mode");
 		}
 

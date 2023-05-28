@@ -36,7 +36,7 @@ namespace glplay::kms {
     /*
     * true if this buffer is currently owned by KMS.
     */
-    bool in_use = true;
+    bool in_use = false;
 
     bool supportsFBModifiers = true;
 
@@ -124,13 +124,34 @@ namespace glplay::kms {
     public:
       explicit Display(int adapterFD, drm::Connector &connector, drm::Crtc &crtc, drm::Plane &plane);
       void createEGLBuffers(int adapterFD, bool adapterSupportsFBModifiers, egl::EGLDevice &eglDevice, gbm::GBMDevice &gbmDevice);
-    private:
+      bool needs_repaint = true;
+      /* Whether or not the output supports explicit fencing. */
+      bool explicitFencing;
+      Buffer *bufferPending;
+      Buffer *bufferLast;
+      
+      /* Fence FD for completion of the last atomic commit. */
+      int commitFenceFD = -1;
+  
+      /*
+      * Time the last frame's commit completed from KMS, and when the
+      * next frame's commit is predicted to complete.
+      */
+      struct timespec last_frame;
+      struct timespec next_frame;
+
+      /*
+      * The frame of the animation to display.
+      */
+      unsigned int frame_num;
+	    int64_t refreshIntervalNsec = -1;
       /* Buffers allocated by us.*/
       std::vector<Buffer> buffers;
-      std::string name;
-      bool needs_repaint = true;
-      drm::Plane& primary_plane;
       drm::Crtc& crtc;
+      std::string name;
+
+    private:
+      drm::Plane& primary_plane;
       drm::Connector& connector;
       drm::props props;  
       void plane_formats_populate(int adapterFD, drmModeObjectPropertiesPtr props);
@@ -143,11 +164,6 @@ namespace glplay::kms {
       std::vector<uint64_t> modifiers;
       uint32_t mode_blob_id = 0;
       drmModeModeInfo mode;
-	    int64_t refreshIntervalNsec = -1;
-      /* Whether or not the output supports explicit fencing. */
-      bool explicitFencing;
-      /* Fence FD for completion of the last atomic commit. */
-      int commitFenceFD = -1;
 
     //         /*
     //   * Time the last frame's commit completed from KMS, and when the

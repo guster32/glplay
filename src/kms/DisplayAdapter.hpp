@@ -23,12 +23,13 @@ namespace glplay::kms {
     public:
       explicit DisplayAdapter(std::string &path);
       [[nodiscard]] auto getAdapterFD() { return adapterFD.fileDescriptor(); }
-    private:
       nix::FileDescriptor adapterFD;
-      std::vector<drm::Plane> planes;
       std::vector<Display> displays;
       gbm::GBMDevice gbmDevice;
       egl::EGLDevice eglDevice;
+    private:
+      std::vector<drm::Plane> planes;
+      
 
       auto findEncoderForConnector(drm::Resources &resources, drm::Connector &connector) -> drm::Encoder;
       auto findCrtcForEncoder(drm::Resources &resources, drm::Encoder &encoder) -> drm::Crtc;
