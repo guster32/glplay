@@ -37,7 +37,7 @@ namespace glplay::kms {
     throw std::runtime_error("failed to create BO\n");
   }
 
-  Display::Display(int adapterFD, drm::Connector &connector, drm::Crtc &crtc, drm::Plane &plane): connector(connector), mode(crtc->mode), primary_plane(plane), crtc(crtc), explicitFencing(false) {
+  Display::Display(int adapterFD, drm::Connector &connector, drm::Crtc &crtc, drm::Plane &primary_plane): connector(connector), mode(crtc->mode), primary_plane(primary_plane), crtc(crtc), explicitFencing(false) {
     
     auto refresh = ((crtc->mode.clock * 1000000LL / crtc->mode.htotal) +
 		  (crtc->mode.vtotal / 2)) / crtc->mode.vtotal;
@@ -50,7 +50,7 @@ namespace glplay::kms {
     
     mode_blob_id = drm::mode_blob_create(adapterFD, &mode);
     
-    auto *planeProps = drmModeObjectGetProperties(adapterFD, plane->plane_id, DRM_MODE_OBJECT_PLANE);
+    auto *planeProps = drmModeObjectGetProperties(adapterFD, primary_plane->plane_id, DRM_MODE_OBJECT_PLANE);
     drm::drm_property_info_populate(adapterFD, drm::plane_props, this->props.plane, drm::plane_props.size(), planeProps);
     this->plane_formats_populate(adapterFD, planeProps);
 

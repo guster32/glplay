@@ -122,7 +122,7 @@ namespace glplay::kms {
 
   class Display {
     public:
-      explicit Display(int adapterFD, drm::Connector &connector, drm::Crtc &crtc, drm::Plane &plane);
+      explicit Display(int adapterFD, drm::Connector &connector, drm::Crtc &crtc, drm::Plane &primary_plane);
       void createEGLBuffers(int adapterFD, bool adapterSupportsFBModifiers, egl::EGLDevice &eglDevice, gbm::GBMDevice &gbmDevice);
       bool needs_repaint = true;
       /* Whether or not the output supports explicit fencing. */
@@ -165,30 +165,6 @@ namespace glplay::kms {
       //   /* Supported format modifiers for XRGB8888. */
       std::vector<uint64_t> modifiers;
 
-    //         /*
-    //   * Time the last frame's commit completed from KMS, and when the
-    //   * next frame's commit is predicted to complete.
-    //   */
-    //   struct timespec last_frame;
-    //   struct timespec next_frame;
-
-    //   /*
-    //   * The frame of the animation to display.
-    //   */
-    //   unsigned int frame_num;
-
-    //   struct {
-    //     EGLConfig cfg;
-    //     EGLContext ctx;
-    //     GLuint gl_prog;
-    //     GLuint pos_attr;
-    //     GLuint col_uniform;
-    //     GLuint vbo;
-    //     GLuint vao;
-    //     /* Whether to use big OpenGL Core Profile context or to use GLES */
-    //     bool gl_core;
-    //   } egl;
-
   };
 
 
@@ -209,31 +185,3 @@ namespace glplay::kms {
   }
 
 }
-
-// struct output {
-
-// 	struct {
-// 		struct drm_property_info plane[WDRM_PLANE__COUNT];
-// 		struct drm_property_info crtc[WDRM_CRTC__COUNT];
-// 		struct drm_property_info connector[WDRM_CONNECTOR__COUNT];
-// 	} props;
-
-// 	/* Buffers allocated by us. */
-// 	struct buffer *buffers[BUFFER_QUEUE_DEPTH];
-
-// 	/*
-// 	 * The buffer we've just committed to KMS, waiting for it to send the
-// 	 * atomic-complete event to tell us it's started displaying; set by
-// 	 * repaint_one_output and cleared by atomic_event_handler.
-// 	 */
-// 	struct buffer *buffer_pending;
-
-// 	/*
-// 	 * The buffer currently being displayed by KMS, having been advanced
-// 	 * from buffer_pending inside atomic_event_handler, then cleared by
-// 	 * atomic_event_handler when the hardware starts displaying the next
-// 	 * buffer.
-// 	 */
-// 	struct buffer *buffer_last;
-
-// };
