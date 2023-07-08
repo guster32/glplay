@@ -143,7 +143,7 @@ namespace glplay::kms {
       /*
       * The frame of the animation to display.
       */
-      unsigned int frame_num;
+      int frame_num;
 	    int64_t refreshIntervalNsec = -1;
       /* Buffers allocated by us.*/
       std::vector<Buffer> buffers;

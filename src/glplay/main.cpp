@@ -228,7 +228,7 @@ static struct glplay::kms::Buffer *find_free_buffer(struct glplay::kms::Display 
 	assert(0 && "could not find free buffer for output!");
 }
 
-static void fill_verts(GLfloat *verts, GLfloat *col, int frame_num, int loc)
+static void fill_verts(GLfloat *verts, GLfloat *col, unsigned int frame_num, unsigned int loc)
 {
 	float factor = ((frame_num * 2.0) / (float) NUM_ANIM_FRAMES) - 1.0f;
 	GLfloat top, bottom, left, right;
@@ -479,7 +479,7 @@ auto buffer_fill(glplay::kms::DisplayAdapter *adapter, glplay::kms::Display *dis
 
 /* Sets a plane property inside an atomic request. */
 static int
-plane_add_prop(drmModeAtomicReq *req, glplay::kms::Display * display,
+plane_add_prop(drmModeAtomicReqPtr req, glplay::kms::Display * display,
 	       enum glplay::drm::wdrm_plane_property prop, uint64_t val)
 {
 	auto info = &display->props.plane[prop];
@@ -553,7 +553,8 @@ void output_add_atomic_req(glplay::kms::Display * display, drmModeAtomicReqPtr r
 
 	debug("[%s] atomic state for commit:\n", display->name.c_str());
 
-	ret = plane_add_prop(req, display, glplay::drm::WDRM_PLANE_CRTC_ID, display->crtc->crtc_id);
+
+	ret = plane_add_prop(req, display, glplay::drm::wdrm_plane_property::WDRM_PLANE_CRTC_ID, display->crtc->crtc_id);
 
 	/*
 	 * SRC_X/Y/W/H are the co-ordinates to use as the dimensions of the
