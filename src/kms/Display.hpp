@@ -122,7 +122,7 @@ namespace glplay::kms {
 
   class Display {
     public:
-      explicit Display(int adapterFD, drm::Connector &connector, drm::Crtc &crtc, drm::Plane &primary_plane);
+      explicit Display(int adapterFD, uint32_t connectorId, drm::Resources &resources);
       void createEGLBuffers(int adapterFD, bool adapterSupportsFBModifiers, egl::EGLDevice &eglDevice, gbm::GBMDevice &gbmDevice);
       bool needs_repaint = true;
       /* Whether or not the output supports explicit fencing. */
@@ -147,23 +147,26 @@ namespace glplay::kms {
 	    int64_t refreshIntervalNsec = -1;
       /* Buffers allocated by us.*/
       std::vector<Buffer> buffers;
-      drm::Crtc& crtc;
+      drm::Crtc crtc;
+      drm::Connector connector;
       std::string name;
-      drm::Plane& primary_plane;
-      drm::Connector& connector;
+      drm::Plane primary_plane;
       drm::props props;
       uint32_t mode_blob_id = 0;
-      drmModeModeInfo mode;
 
     private:
       void plane_formats_populate(int adapterFD, drmModeObjectPropertiesPtr props);
       void get_edid(int adapterFD, drmModeObjectPropertiesPtr props);
       auto createEGLBuffer(int adapterFD, bool adapterSupportsFBModifiers, egl::EGLDevice &eglDevice, gbm::GBMDevice &gbmDevice) -> Buffer;
+      auto findPrimaryPlaneForCrtc() -> drm::Plane;
+      static auto findCrtcForEncoder(int adapterFD, drm::Resources &resources, drm::Encoder &encoder) -> drm::Crtc;
+      static auto findEncoderForConnector(int adapterFD, drm::Resources &resources, drm::Connector &connector) -> drm::Encoder;
       static void failOnBOCreationError(Buffer &buffer, std::array<int, 4> dma_buf_fds);
       static void buffer_egl_destroy(int adapterFD, egl::EGLDevice &eglDevice, Buffer &buffer);
 
       //   /* Supported format modifiers for XRGB8888. */
       std::vector<uint64_t> modifiers;
+      std::vector<drm::Plane> planes;
 
   };
 

@@ -27,13 +27,6 @@ namespace glplay::kms {
       std::vector<Display> displays;
       gbm::GBMDevice gbmDevice;
       egl::EGLDevice eglDevice;
-    private:
-      std::vector<drm::Plane> planes;
-      
-
-      auto findEncoderForConnector(drm::Resources &resources, drm::Connector &connector) -> drm::Encoder;
-      auto findCrtcForEncoder(drm::Resources &resources, drm::Encoder &encoder) -> drm::Crtc;
-      auto findPrimaryPlaneForCrtc(drm::Crtc &crtc) -> drm::Plane;
   };
 
 }

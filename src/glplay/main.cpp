@@ -523,7 +523,7 @@ static int
 connector_add_prop(drmModeAtomicReq *req, glplay::kms::Display * display,
 		   enum glplay::drm::wdrm_connector_property prop, uint64_t val)
 {
-	auto info = &display->props.crtc[prop];
+	auto info = &display->props.connector[prop];
 	int ret;
 
 	if (info->prop_id == 0)
@@ -589,8 +589,8 @@ void output_add_atomic_req(glplay::kms::Display * display, drmModeAtomicReqPtr r
 	ret |= plane_add_prop(req, display, glplay::drm::WDRM_PLANE_CRTC_H, buffer->height);
 
 	/* Ensure we do actually have a full-screen buffer. */
-	assert(buffer->width == display->mode.hdisplay);
-	assert(buffer->height == display->mode.vdisplay);
+	assert(buffer->width == display->crtc->mode.hdisplay);
+	assert(buffer->height == display->crtc->mode.vdisplay);
 
 	/*
 	 * Changing any of these three properties requires the ALLOW_MODESET
@@ -600,8 +600,7 @@ void output_add_atomic_req(glplay::kms::Display * display, drmModeAtomicReqPtr r
 			     display->mode_blob_id);
 	ret |= crtc_add_prop(req, display, glplay::drm::WDRM_CRTC_ACTIVE, 1);
 
-	//TODO: add adapter to fix false.
-	if (display->explicitFencing && false) {
+	if (display->explicitFencing) {
 		if (display->commitFenceFD >= 0)
 			close(display->commitFenceFD);
 		display->commitFenceFD = -1;
@@ -696,7 +695,7 @@ int atomic_commit(glplay::kms::DisplayAdapter *adapter, drmModeAtomicReqPtr req,
 
 	if (allow_modeset)
 		flags |= DRM_MODE_ATOMIC_ALLOW_MODESET;
-
+	
 	return drmModeAtomicCommit(adapter->getAdapterFD(), req, flags, adapter);
 }
 
@@ -709,14 +708,20 @@ static void sighandler(int signo)
 	return;
 }
 
-
 auto main(int argc, char *argv[]) -> int {
 	auto paths = glplay::drm::getDevicePaths();
 	auto adapter = glplay::kms::DisplayAdapter(paths.at(0));
 	//Create renderer here  vk_device_create or device_egl_setup or software
 	
-	auto vt_fd = glplay::nix::vt_setup();
+	auto glplay_vt = glplay::nix::find_free_VT();
+	int orig_vt = glplay::nix::get_active_vt(glplay_vt.vt_fd);
+	/* Switch to the target VT. */
+	glplay::nix::activate_vt(glplay_vt.vt_fd, glplay_vt.tty_num);
+	int orig_mode = glplay::nix::disable_keyboard(glplay_vt.vt_fd);
+	glplay::nix::set_graphics(glplay_vt.vt_fd);
+	debug("VT setup complete\n");
 	debug("finished initialization\n");
+
 	while (!shall_exit) {
 		drmModeAtomicReq *req;
 		bool needs_modeset = false;
@@ -825,7 +830,9 @@ auto main(int argc, char *argv[]) -> int {
 			break;
 		}
 	}
-	glplay::nix::vt_reset(vt_fd);
+
+	glplay::nix::set_text(glplay_vt.vt_fd, orig_mode);
+	glplay::nix::activate_vt(glplay_vt.vt_fd, orig_vt);
   
 	return 0;
 }

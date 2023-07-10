@@ -37,8 +37,50 @@ namespace glplay::kms {
     throw std::runtime_error("failed to create BO\n");
   }
 
-  Display::Display(int adapterFD, drm::Connector &connector, drm::Crtc &crtc, drm::Plane &primary_plane): connector(connector), mode(crtc->mode), primary_plane(primary_plane), crtc(crtc), explicitFencing(false) {
-    
+  auto Display::findCrtcForEncoder(int adapterFD, drm::Resources &resources, drm::Encoder &encoder) -> drm::Crtc {
+		for(int idx = 0; idx < resources->count_crtcs; idx++) {
+      if (resources->crtcs[idx] == encoder->crtc_id) {
+				return drm::make_crtc_ptr(adapterFD, resources->crtcs[idx]);
+			}
+		}
+		throw std::runtime_error("Unable to find crtc for encoder");
+	}
+
+ 	auto Display::findPrimaryPlaneForCrtc() -> drm::Plane {
+		for (auto plane : planes) {
+			if(plane->crtc_id == crtc->crtc_id && plane->fb_id == crtc->buffer_id) {
+				return plane;
+			}
+		}
+		throw std::runtime_error("Unable to find plane for crtc");
+	}
+
+  auto Display::findEncoderForConnector(int adapterFD, drm::Resources &resources, drm::Connector &connector) -> drm::Encoder {
+		for(int idx = 0; idx < resources->count_encoders; idx++) {
+      if (resources->encoders[idx] == connector->encoder_id) {
+				return drm::make_encoder_ptr(adapterFD, resources->encoders[idx]);
+			}
+		}
+		throw std::runtime_error("Unable to find encoder for connector");
+	}
+
+  Display::Display(int adapterFD, uint32_t connectorId, drm::Resources &resources):
+    explicitFencing(false), connector(drm::make_connetor_ptr(adapterFD, connectorId)) {
+    auto encoder = findEncoderForConnector(adapterFD, resources, connector);
+    this->crtc = findCrtcForEncoder(adapterFD, resources, encoder);
+
+    auto planeResources = drm::make_plane_resources_ptr(adapterFD);
+
+    if (resources->count_crtcs <= 0 || resources->count_connectors <= 0 ||
+				resources->count_encoders <= 0 || planeResources->count_planes <= 0) {
+      throw std::runtime_error("device fd is not a KMS device");
+		}
+
+    for(uint32_t idx = 0; idx < planeResources->count_planes; ++idx) {
+			planes.emplace_back(drm::make_plane_ptr(adapterFD, planeResources->planes[idx]));
+    }
+
+    this->primary_plane = findPrimaryPlaneForCrtc();
     auto refresh = ((crtc->mode.clock * 1000000LL / crtc->mode.htotal) +
 		  (crtc->mode.vtotal / 2)) / crtc->mode.vtotal;
     
@@ -48,7 +90,7 @@ namespace glplay::kms {
 
     refreshIntervalNsec = millihzToNsec(refresh);
     
-    mode_blob_id = drm::mode_blob_create(adapterFD, &mode);
+    mode_blob_id = drm::mode_blob_create(adapterFD, &crtc->mode);
     
     auto *planeProps = drmModeObjectGetProperties(adapterFD, primary_plane->plane_id, DRM_MODE_OBJECT_PLANE);
     drm::drm_property_info_populate(adapterFD, drm::plane_props, this->props.plane, drm::plane_props.size(), planeProps);
@@ -163,8 +205,8 @@ namespace glplay::kms {
     if (buffer.supportsFBModifiers) {
       buffer.gbm.bo = gbm_bo_create_with_modifiers(
         gbmDevice.get(),
-        mode.hdisplay,
-        mode.vdisplay,
+        crtc->mode.hdisplay,
+        crtc->mode.vdisplay,
         DRM_FORMAT_XRGB8888,
         modifiers.data(),
         modifiers.size());
@@ -177,15 +219,15 @@ namespace glplay::kms {
       buffer.supportsFBModifiers = false;
       buffer.gbm.bo = gbm_bo_create(
         gbmDevice.get(),
-        mode.hdisplay,
-        mode.vdisplay,
+        crtc->mode.hdisplay,
+        crtc->mode.vdisplay,
         DRM_FORMAT_XRGB8888,
         GBM_BO_USE_RENDERING | GBM_BO_USE_SCANOUT);
     }
   
     if(buffer.gbm.bo == nullptr) {
       error("failed to create %u x %u BO\n",
-		    mode.hdisplay, mode.vdisplay);
+		    crtc->mode.hdisplay, crtc->mode.vdisplay);
       throw std::runtime_error("failed to create BO\n");
     }
 
@@ -194,8 +236,8 @@ namespace glplay::kms {
     * created it.
     */
     buffer.format = DRM_FORMAT_XRGB8888;
-    buffer.width = mode.hdisplay;
-    buffer.height = mode.vdisplay;
+    buffer.width = crtc->mode.hdisplay;
+    buffer.height = crtc->mode.vdisplay;
     buffer.modifier = gbm_bo_get_modifier(buffer.gbm.bo);
     num_planes = gbm_bo_get_plane_count(buffer.gbm.bo);
     for (int i = 0; i < num_planes; i++) {

@@ -69,18 +69,15 @@
 
 
 namespace glplay::nix {
-	/*
-	* Set up the VT/TTY so it runs in graphics mode and lets us handle our own
-	* input. This uses the VT specified in $TTYNO if specified, or the current VT
-	* if we're running directly from a VT, or failing that tries to find a free
-	* one to switch to.
-	*/
-	inline auto static vt_setup() -> FileDescriptor {
-		int tty_num = 0;
-		int cur_vt = 0;
-		
-		std::array<char, 32> tty_dev{};
 
+	struct glplay_vt {
+		FileDescriptor vt_fd;
+		int tty_num;
+	};
+
+	inline auto static find_free_VT() -> glplay_vt {
+		int tty_num = 0;
+		std::array<char, 32> tty_dev{};
 		/* if we're running from a VT ourselves, just reuse
 		* Other-other-wise, look for a free VT we can use by querying /dev/tty0.
 		*/
@@ -123,43 +120,56 @@ namespace glplay::nix {
 			tty_num = minor(buf.st_rdev);
 		}
 		assert(tty_num != 0);
-
 		debug("using VT %d\n", tty_num);
+		return { vt_fd, tty_num };
+	}
 
-		/* Switch to the target VT. */
+	inline auto get_active_vt(FileDescriptor &vt_fd) -> int {
+		struct vt_stat vt_state{};
+    if (ioctl(vt_fd.fileDescriptor(), VT_GETSTATE, &vt_state) != 0) {
+        throw std::runtime_error("Failed to retrieve VT state");
+    }
+		debug("active VT is %d\n", vt_state.v_active);
+    return vt_state.v_active;
+	}
+
+	inline auto activate_vt(FileDescriptor &vt_fd, int tty_num) -> void {
 		if (ioctl(vt_fd.fileDescriptor(), VT_ACTIVATE, tty_num) != 0 ||
 				ioctl(vt_fd.fileDescriptor(), VT_WAITACTIVE, tty_num) != 0) {
-			error("couldn't switch to VT %d\n", tty_num);
+			error("couldn't switch to VT %d\n", 0);
 			throw std::runtime_error("Failed to switch to target VT");
 		}
-
 		debug("switched to VT %d\n", tty_num);
+	}
 
+	inline auto disable_keyboard(FileDescriptor &vt_fd) -> int {
 		/* Completely disable kernel keyboard processing: this prevents us
 		* from being killed on Ctrl-C. */
-		// if (ioctl(vt_fd.fileDescriptor(), KDGKBMODE, &device->saved_kb_mode) != 0 ||
-		// 		ioctl(vt_fd.fileDescriptor(), KDSKBMODE, K_OFF) != 0) {
-		// 	throw std::runtime_error("failed to disable TTY keyboard processing");
-		// }
+		int saved_kb_mode = K_UNICODE;
+		if (ioctl(vt_fd.fileDescriptor(), KDGKBMODE, &saved_kb_mode) != 0 ||
+				ioctl(vt_fd.fileDescriptor(), KDSKBMODE, K_OFF) != 0) {
+			throw std::runtime_error("failed to disable TTY keyboard processing");
+		}
+		debug("Keyboard mode disabled. Original mode was: %d\n", saved_kb_mode);
+		return saved_kb_mode;
+	}
 
+	inline auto set_graphics(FileDescriptor &vt_fd) -> void {
 		/* Change the VT into graphics mode, so the kernel no longer prints
-		* text out on top of us. */
+		* text out on top of us.
+		* Normally we would also call VT_SETMODE to change the mode to
+		* VT_PROCESS here, which would allow us to intercept VT-switching
+		* requests and tear down KMS. But we don't, since that requires
+		* signal handling. */
 		if (ioctl(vt_fd.fileDescriptor(), KDSETMODE, KD_GRAPHICS) != 0) {
 			error("failed to switch TTY to graphics mode\n");
 			throw std::runtime_error("Failed to switch to graphics mode");
 		}
 
-		debug("VT setup complete\n");
-
-		/* Normally we would also call VT_SETMODE to change the mode to
-		* VT_PROCESS here, which would allow us to intercept VT-switching
-		* requests and tear down KMS. But we don't, since that requires
-		* signal handling. */
-		return vt_fd;
 	}
 
-	inline auto static vt_reset(FileDescriptor &vt_fd) ->void {
-		//ioctl(vt_fd.fileDescriptor(), KDSKBMODE, device->saved_kb_mode);
+	inline auto static set_text(FileDescriptor &vt_fd, int mode) ->void {
+		ioctl(vt_fd.fileDescriptor(), KDSKBMODE, mode);
 		ioctl(vt_fd.fileDescriptor(), KDSETMODE, KD_TEXT);
 	}
 }
