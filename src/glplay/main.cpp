@@ -92,16 +92,16 @@ static void atomic_event_handler(int fd,
 	unsigned int crtc_id,
 	void *user_data)
 {
-	const auto *adapter = static_cast<const glplay::kms::DisplayAdapter*>(user_data);
+	auto *adapter = static_cast<glplay::kms::DisplayAdapter*>(user_data);
 	glplay::kms::Display *display = nullptr;
-		struct timespec completion = {
+	struct timespec completion = {
 		.tv_sec = tv_sec,
 		.tv_nsec = (tv_usec * 1000),
 	};
 	int64_t delta_nsec;
 
 	/* Find the output this event is delivered for. */
-	for (auto disp : adapter->displays) {  
+	for (auto &disp : adapter->displays) {  
 		if(disp.crtc->crtc_id == crtc_id) {
 			display = &disp;
 			break;
@@ -137,27 +137,27 @@ static void atomic_event_handler(int fd,
 	} else {
 		debug("[%s] completed at %" PRIu64 " (delta %" PRIi64 "ns)\n",
 		      display->name.c_str(),
-		      glplay::kms::timespec_to_nsec(&completion),
-		      delta_nsec);
+					glplay::kms::timespec_to_nsec(&completion),
+					delta_nsec);
 	}
 
 	display->needs_repaint = true;
 	display->last_frame = completion;
 
 	/*
-	 * buffer_pending is the buffer we've just committed; this event tells
-	 * us that buffer_pending is now being displayed, which means that
-	 * buffer_last is no longer being displayed and we can reuse it.
-	 */
+	* buffer_pending is the buffer we've just committed; this event tells
+	* us that buffer_pending is now being displayed, which means that
+	* buffer_last is no longer being displayed and we can reuse it.
+	*/
 	assert(display->bufferPending);
 	assert(display->bufferPending->in_use);
 
 	if (display->explicitFencing && adapter->eglDevice.explicit_fencing) {
 		/*
-		 * Print the time that the KMS fence FD signaled, i.e. when the
-		 * last commit completed. It should be the same time as passed
-		 * to this event handler in the function arguments.
-		 */
+		* Print the time that the KMS fence FD signaled, i.e. when the
+		* last commit completed. It should be the same time as passed
+		* to this event handler in the function arguments.
+		*/
 		if (display->bufferLast &&
 		    display->bufferLast->kms_fence_fd >= 0) {
 			assert(linux_sync_file_is_valid(display->bufferLast->kms_fence_fd));
@@ -166,11 +166,11 @@ static void atomic_event_handler(int fd,
 		}
 
 		/*
-		 * Print the time that the render fence FD signaled, i.e. when
-		 * we finished writing to the buffer that we have now started
-		 * displaying. It should be strictly before the KMS fence FD
-		 * time.
-		 */
+		* Print the time that the render fence FD signaled, i.e. when
+		* we finished writing to the buffer that we have now started
+		* displaying. It should be strictly before the KMS fence FD
+		* time.
+		*/
 		assert(linux_sync_file_is_valid(display->bufferPending->render_fence_fd));
 		debug("\trender fence time: %" PRIu64 "ns\n",
 		      linux_sync_file_get_fence_time(display->bufferPending->render_fence_fd));
@@ -191,12 +191,12 @@ static void atomic_event_handler(int fd,
  * Advance the output's frame counter, aiming to achieve linear animation
  * speed: if we miss a frame, try to catch up by dropping frames.
  */
-static void advance_frame(glplay::kms::Display *display, struct timespec *now)
+static void advance_frame(glplay::kms::Display &display, struct timespec *now)
 {
 	struct timespec too_soon;
 
 	/* For our first tick, we won't have predicted a time. */
-	if (glplay::kms::timespec_to_nsec(&display->last_frame) == 0L)
+	if (glplay::kms::timespec_to_nsec(&display.last_frame) == 0L)
 		return;
 
 	/*
@@ -209,18 +209,18 @@ static void advance_frame(glplay::kms::Display *display, struct timespec *now)
 	 * temporally correct.
 	 */
 	glplay::kms::timespec_add_msec(&too_soon, now, 4);
-	display->next_frame = display->last_frame;
+	display.next_frame = display.last_frame;
 
-	while (glplay::kms::timespec_sub_to_nsec(&too_soon, &display->next_frame) >= 0) {
-		glplay::kms::timespec_add_nsec(&display->next_frame, &display->next_frame,
-				  display->refreshIntervalNsec);
-		display->frame_num = (display->frame_num + 1) % NUM_ANIM_FRAMES;
+	while (glplay::kms::timespec_sub_to_nsec(&too_soon, &display.next_frame) >= 0) {
+		glplay::kms::timespec_add_nsec(&display.next_frame, &display.next_frame,
+				  display.refreshIntervalNsec);
+		display.frame_num = (display.frame_num + 1) % NUM_ANIM_FRAMES;
 	}
 }
 
-static struct glplay::kms::Buffer *find_free_buffer(struct glplay::kms::Display *display)
+static struct glplay::kms::Buffer *find_free_buffer(struct glplay::kms::Display &display)
 {
-	for (auto &buffer : display->buffers) {  
+	for (auto &buffer : display.buffers) {  
 		if (!buffer.in_use) {
 			return &buffer;
 		}
@@ -288,7 +288,7 @@ static void fill_verts(GLfloat *verts, GLfloat *col, unsigned int frame_num, uns
 	verts[7] = bottom;
 }
 
-inline auto buffer_egl_fill(glplay::kms::DisplayAdapter *adapter, glplay::kms::Display *display) -> glplay::kms::Buffer* {
+inline auto buffer_egl_fill(gsl::shared_ptr<glplay::kms::DisplayAdapter> adapter, glplay::kms::Display &display) -> glplay::kms::Buffer* {
     static PFNEGLCREATESYNCKHRPROC create_sync = NULL;
     static PFNEGLWAITSYNCKHRPROC wait_sync = NULL;
     static PFNEGLDESTROYSYNCKHRPROC destroy_sync = NULL;
@@ -309,7 +309,7 @@ inline auto buffer_egl_fill(glplay::kms::DisplayAdapter *adapter, glplay::kms::D
             adapter->eglDevice.ctx);
     assert(ret);
 
-    if (display->explicitFencing && adapter->eglDevice.explicit_fencing) {
+    if (display.explicitFencing && adapter->eglDevice.explicit_fencing) {
       if (!create_sync) {
         create_sync = (PFNEGLCREATESYNCKHRPROC)
           eglGetProcAddress("eglCreateSyncKHR");
@@ -371,7 +371,7 @@ inline auto buffer_egl_fill(glplay::kms::DisplayAdapter *adapter, glplay::kms::D
       GLfloat col[4];
       GLfloat verts[8];
       GLuint err = glGetError();
-      fill_verts(verts, col, display->frame_num, i);
+      fill_verts(verts, col, display.frame_num, i);
       glBindBuffer(GL_ARRAY_BUFFER, adapter->eglDevice.vbo);
       /* glBufferSubData is most supported across GLES2 / Core profile,
       * Core profile / GLES3 might have better ways */
@@ -397,7 +397,7 @@ inline auto buffer_egl_fill(glplay::kms::DisplayAdapter *adapter, glplay::kms::D
     * This flush also acts as our guarantee when using implicit fencing
     * that the rendering will actually be issued.
     */
-    if (display->explicitFencing && adapter->eglDevice.explicit_fencing) {
+    if (display.explicitFencing && adapter->eglDevice.explicit_fencing) {
       EGLint attribs[] = {
         EGL_SYNC_NATIVE_FENCE_FD_ANDROID, EGL_NO_NATIVE_FENCE_FD_ANDROID,
         EGL_NONE,
@@ -417,7 +417,7 @@ inline auto buffer_egl_fill(glplay::kms::DisplayAdapter *adapter, glplay::kms::D
     * Now we've flushed, we can get the fence FD associated with our
     * rendering, which we can pass to KMS to wait for.
     */
-    if (display->explicitFencing && adapter->eglDevice.explicit_fencing) {
+    if (display.explicitFencing && adapter->eglDevice.explicit_fencing) {
       int fd = dup_fence_fd(adapter->eglDevice.egl_dpy, sync);
       assert(fd >= 0);
       assert(linux_sync_file_is_valid(fd));
@@ -426,8 +426,8 @@ inline auto buffer_egl_fill(glplay::kms::DisplayAdapter *adapter, glplay::kms::D
     }
 
 	buffer->in_use = true;
-	display->bufferPending = buffer;
-	display->needs_repaint = false;
+	display.bufferPending = buffer;
+	display.needs_repaint = false;
 	return buffer;
 }
 
@@ -436,7 +436,7 @@ inline auto buffer_egl_fill(glplay::kms::DisplayAdapter *adapter, glplay::kms::D
  * Using the CPU mapping, fill the buffer with a simple pixel-by-pixel
  * checkerboard; the boundaries advance from top-left to bottom-right.
  */
-auto buffer_fill(glplay::kms::DisplayAdapter *adapter, glplay::kms::Display *display) -> glplay::kms::Buffer* {
+auto buffer_fill(gsl::shared_ptr<glplay::kms::DisplayAdapter> adapter, glplay::kms::Display &display) -> glplay::kms::Buffer* {
 	
 	
 	// if (buffer->gbm.bo) {
@@ -620,7 +620,7 @@ void output_add_atomic_req(glplay::kms::Display * display, drmModeAtomicReqPtr r
 	assert(ret == 0);
 }
 
-static void repaint_one_output(glplay::kms::DisplayAdapter &adapter, glplay::kms::Display &display, drmModeAtomicReqPtr req, bool *needs_modeset)
+static void repaint_one_output(gsl::shared_ptr<glplay::kms::DisplayAdapter> adapter, glplay::kms::Display &display, drmModeAtomicReqPtr req, bool needs_modeset)
 {
 	struct timespec now;
 	int ret;
@@ -628,8 +628,8 @@ static void repaint_one_output(glplay::kms::DisplayAdapter &adapter, glplay::kms
 	ret = clock_gettime(CLOCK_MONOTONIC, &now);
 	assert(ret == 0);
 
-	advance_frame(&display, &now);
-	auto buffer = buffer_fill(&adapter, &display);
+	advance_frame(display, &now);
+	auto buffer = buffer_fill(adapter, display);
 
 	/* Add the output's new state to the atomic modesetting request. */
 	output_add_atomic_req(&display, req, buffer);
@@ -641,7 +641,7 @@ static void repaint_one_output(glplay::kms::DisplayAdapter &adapter, glplay::kms
 	 * our configuration is similar enough.
 	 */
 	if (glplay::kms::timespec_to_nsec(&display.last_frame) == 0UL) {
-		*needs_modeset = true;
+		needs_modeset = true;
 	}
 
 	if (glplay::kms::timespec_to_nsec(&display.next_frame) != 0UL) {
@@ -686,7 +686,7 @@ static void repaint_one_output(glplay::kms::DisplayAdapter &adapter, glplay::kms
  * as KMS itself does not describe the constraints a driver has, e.g.
  * certain planes can only scale by certain amounts.
  */
-int atomic_commit(glplay::kms::DisplayAdapter *adapter, drmModeAtomicReqPtr req,
+int atomic_commit(gsl::shared_ptr<glplay::kms::DisplayAdapter> adapter, drmModeAtomicReqPtr req,
 		  bool allow_modeset)
 {
 	int ret;
@@ -696,7 +696,7 @@ int atomic_commit(glplay::kms::DisplayAdapter *adapter, drmModeAtomicReqPtr req,
 	if (allow_modeset)
 		flags |= DRM_MODE_ATOMIC_ALLOW_MODESET;
 	
-	return drmModeAtomicCommit(adapter->getAdapterFD(), req, flags, adapter);
+	return drmModeAtomicCommit(adapter->getAdapterFD(), req, flags, adapter.get());
 }
 
 static bool shall_exit = false;
@@ -710,7 +710,7 @@ static void sighandler(int signo)
 
 auto main(int argc, char *argv[]) -> int {
 	auto paths = glplay::drm::getDevicePaths();
-	auto adapter = glplay::kms::DisplayAdapter(paths.at(0));
+	auto adapter = std::make_shared<glplay::kms::DisplayAdapter>(paths.at(0));
 	//Create renderer here  vk_device_create or device_egl_setup or software
 	
 	auto glplay_vt = glplay::nix::find_free_VT();
@@ -724,7 +724,7 @@ auto main(int argc, char *argv[]) -> int {
 
 	while (!shall_exit) {
 		drmModeAtomicReq *req;
-		bool needs_modeset = false;
+		auto needs_modeset = false;
 		int output_count = 0;
 		int ret = 0;
 		drmEventContext evctx = {
@@ -732,7 +732,7 @@ auto main(int argc, char *argv[]) -> int {
 			.page_flip_handler2 = atomic_event_handler,
 		};
 		struct pollfd poll_fd = {
-			.fd = adapter.getAdapterFD(),
+			.fd = adapter->getAdapterFD(),
 			.events = POLLIN,
 		};
 
@@ -759,7 +759,7 @@ auto main(int argc, char *argv[]) -> int {
 		 * of any hardware changes it would need to perform to reach
 		 * the target state.
 		 */
-		for (auto &display : adapter.displays) {  
+		for (auto &display : adapter->displays) {  
 			if(display.needs_repaint) {
 				/*
 				 * Add this output's new state to the atomic
@@ -789,7 +789,7 @@ auto main(int argc, char *argv[]) -> int {
 		 * with the content for every output.
 		 */
 		if (output_count != 0)
-			ret = atomic_commit(&adapter, req, needs_modeset);
+			ret = atomic_commit(adapter, req, &needs_modeset);
 		drmModeAtomicFree(req);
 		if (ret != 0) {
 			error("atomic commit failed: %d\n", ret);
@@ -802,8 +802,8 @@ auto main(int argc, char *argv[]) -> int {
 		 * will fire. We can use this to find when the _previous_
 		 * buffer is free to reuse again.
 		 */
-		for (auto &display : adapter.displays) {  
-			if (display.explicitFencing && adapter.eglDevice.explicit_fencing && display.bufferLast) {
+		for (auto &display : adapter->displays) {
+			if (display.explicitFencing && adapter->eglDevice.explicit_fencing && display.bufferLast) {
 				assert(linux_sync_file_is_valid(display.commitFenceFD));
 				fd_replace(&display.bufferLast->kms_fence_fd,
 					   display.commitFenceFD);
@@ -824,7 +824,7 @@ auto main(int argc, char *argv[]) -> int {
 			break;
 		}
 
-		ret = drmHandleEvent(adapter.getAdapterFD(), &evctx);
+		ret = drmHandleEvent(adapter->getAdapterFD(), &evctx);
 		if (ret == -1) {
 			error("error reading KMS events: %d\n", ret);
 			break;
