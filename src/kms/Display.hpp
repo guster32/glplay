@@ -11,8 +11,12 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
+#ifdef GLES3
 #include <GLES3/gl3.h>
 #include <GLES3/gl3ext.h>
+#elif GLES2
+#include <GLES2/gl2.h>
+#endif
 /*
  * GLES2 exts is needed for prototypes of GL_OES_EGL_image
  * (i.e. glEGLImageTargetTexture2DOES etc.)

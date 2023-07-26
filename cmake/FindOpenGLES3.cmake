@@ -115,6 +115,7 @@ mark_as_advanced(
 
 if(OPENGLES3_FOUND)
 	message(STATUS "Found system OpenGL ES 3 library: ${OPENGLES3_LIBRARIES}")
+	#MARK_AS_ADVANCED(OPENGLES3_FOUND)
 else()
 	set(OPENGLES3_LIBRARIES "")
 endif()
