@@ -31,7 +31,8 @@ set(ALL_LIBS
 )
 
 add_definitions(
-	-d__GBM__
+	-D__GBM__
+	-DMESA_EGL_NO_X11_HEADERS
 	-DTW_STATIC
 	-DTW_NO_LIB_PRAGMA
 	-DTW_NO_DIRECT3D
