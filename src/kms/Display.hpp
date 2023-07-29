@@ -113,7 +113,11 @@ namespace glplay::kms {
 
     struct {
       struct gbm_bo *bo;
+#ifdef EGL_VERSION_1_5
       EGLImage img;
+#else
+      EGLImageKHR img;
+#endif
       GLuint tex_id;
       GLuint fbo_id;
     } gbm{};

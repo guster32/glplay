@@ -301,6 +301,7 @@ namespace glplay::kms {
     attribs.at(nattribs++) = EGL_DMA_BUF_PLANE0_PITCH_EXT;
     attribs.at(nattribs++) = buffer.pitches[0];
     debug("\tplane 0 pitch %d\n", attribs.at(nattribs - 1));
+#ifdef EGL_VERSION_1_5
     if (buffer.supportsFBModifiers) {
       attribs.at(nattribs++) = EGL_DMA_BUF_PLANE0_MODIFIER_HI_EXT;
       attribs.at(nattribs++) = buffer.modifier >> 32;
@@ -309,7 +310,7 @@ namespace glplay::kms {
       attribs.at(nattribs++) = buffer.modifier & 0xffffffff;
       debug("\tmodifier lo 0x%" PRIx32 "\n", attribs.at(nattribs - 1));
     }
-
+#endif
     if (num_planes > 1) {
       attribs.at(nattribs++) = EGL_DMA_BUF_PLANE1_FD_EXT;
       attribs.at(nattribs++) = dma_buf_fds[1];
@@ -317,12 +318,14 @@ namespace glplay::kms {
       attribs.at(nattribs++) = buffer.offsets[1];
       attribs.at(nattribs++) = EGL_DMA_BUF_PLANE1_PITCH_EXT;
       attribs.at(nattribs++) = buffer.pitches[1];
+#ifdef EGL_VERSION_1_5
       if (buffer.supportsFBModifiers) {
         attribs.at(nattribs++) = EGL_DMA_BUF_PLANE1_MODIFIER_HI_EXT;
         attribs.at(nattribs++) = buffer.modifier >> 32;
         attribs.at(nattribs++) = EGL_DMA_BUF_PLANE1_MODIFIER_LO_EXT;
         attribs.at(nattribs++) = buffer.modifier & 0xffffffff;
       }
+#endif
     }
 
     if (num_planes > 2) {
@@ -332,14 +335,17 @@ namespace glplay::kms {
       attribs.at(nattribs++) = buffer.offsets[2];
       attribs.at(nattribs++) = EGL_DMA_BUF_PLANE2_PITCH_EXT;
       attribs.at(nattribs++) = buffer.pitches[2];
+#ifdef EGL_VERSION_1_5
       if (buffer.supportsFBModifiers) {
         attribs.at(nattribs++) = EGL_DMA_BUF_PLANE2_MODIFIER_HI_EXT;
         attribs.at(nattribs++) = buffer.modifier >> 32;
         attribs.at(nattribs++) = EGL_DMA_BUF_PLANE2_MODIFIER_LO_EXT;
         attribs.at(nattribs++) = buffer.modifier & 0xffffffff;
       }
+#endif
     }
 
+#ifdef EGL_VERSION_1_5
     if (num_planes > 3) {
       attribs.at(nattribs++) = EGL_DMA_BUF_PLANE3_FD_EXT;
       attribs.at(nattribs++) = dma_buf_fds[3];
@@ -354,6 +360,7 @@ namespace glplay::kms {
         attribs.at(nattribs++) = buffer.modifier & 0xffffffff;
       }
     }
+#endif
 
     attribs.at(nattribs++) = EGL_NONE;
 
