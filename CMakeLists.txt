@@ -36,7 +36,6 @@ add_definitions(
 	-DTW_NO_DIRECT3D
 	-DGLEW_STATIC
 	-D_CRT_SECURE_NO_WARNINGS
-	-D__unix__
 )
 
 file(GLOB GLPLAY_SOURCES ${PROJECT_SOURCE_DIR}/src/glplay/*.cpp)
