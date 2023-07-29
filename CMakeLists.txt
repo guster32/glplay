@@ -31,6 +31,7 @@ set(ALL_LIBS
 )
 
 add_definitions(
+	-d__GBM__
 	-DTW_STATIC
 	-DTW_NO_LIB_PRAGMA
 	-DTW_NO_DIRECT3D
