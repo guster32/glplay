@@ -3,7 +3,12 @@
 #include "../gbm/gbm.hpp"
 #include "../nix/nix.hpp"
 #include <EGL/egl.h>
+#ifdef GLES3
 #include <GLES3/gl3.h>
+#elif GLES2
+#include <GLES2/gl2.h>
+#endif
+
 #include <algorithm>
 #include <cstdio>
 #include <iostream>
@@ -374,7 +379,7 @@ inline auto buffer_egl_fill(gsl::shared_ptr<glplay::kms::DisplayAdapter> adapter
       GLuint err = glGetError();
 			fill_verts(verts, col, display.frame_num, i);
 			    // TODO: Do this properly.
-#ifdef GL_ES_VERSION_3_0
+#ifdef GLES3
       glBindBuffer(GL_ARRAY_BUFFER, adapter->eglDevice.vbo);
       /* glBufferSubData is most supported across GLES2 / Core profile,
       * Core profile / GLES3 might have better ways */

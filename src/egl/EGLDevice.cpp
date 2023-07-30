@@ -71,7 +71,7 @@ namespace glplay::egl {
       }
     } else {
       // TODO: Do this properly.
-#ifdef GL_ES_VERSION_3_0
+#ifdef GLES3
       const GLubyte *ext;
       bool found_image = false;
       bool found_sync = false;
@@ -97,7 +97,7 @@ namespace glplay::egl {
         error("GL_OES_EGL_sync not supported\n");
         eglDestroyContext(egl_dpy, ctx);
       }
-#elif
+#else
       error("Unable to get GL extensions\n");
 #endif
     }
@@ -139,7 +139,7 @@ namespace glplay::egl {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     // TODO: Do this properly.
-#ifdef GL_ES_VERSION_3_0
+#ifdef GLES3
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
