@@ -30,9 +30,7 @@ namespace glplay::egl {
     }
     
     GLint status = 0;
-    if (getenv("GL_CORE") != nullptr) {
-      gl_core = true;
-    }
+    gl_core = getenv("GL_CORE") != nullptr;
 
     /*
     * Explicit fencing support requires us to be able to export EGLSync
@@ -72,6 +70,8 @@ namespace glplay::egl {
         eglDestroyContext(egl_dpy, ctx);
       }
     } else {
+      // TODO: Do this properly.
+#ifdef GL_ES_VERSION_3_0
       const GLubyte *ext;
       bool found_image = false;
       bool found_sync = false;
@@ -97,6 +97,9 @@ namespace glplay::egl {
         error("GL_OES_EGL_sync not supported\n");
         eglDestroyContext(egl_dpy, ctx);
       }
+#elif
+      error("Unable to get GL extensions\n");
+#endif
     }
 
     printf("using GL setup: \n"
@@ -135,6 +138,8 @@ namespace glplay::egl {
     glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 8, nullptr, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+    // TODO: Do this properly.
+#ifdef GL_ES_VERSION_3_0
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
@@ -145,12 +150,15 @@ namespace glplay::egl {
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+#endif
   }
 
   auto EGLDevice::initializeDisplay(gbm::GBMDevice &gbmDevice) -> EGLDisplay {
     EGLDisplay egl_display = nullptr;
     // Get supported extensions without considering a display
     const char *exts_no_display = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
+    //TODO: Do this properly
+#ifdef EGL_VERSION_1_5
     /*
     * Try to use eglGetPlatformDisplay.
     */
@@ -161,6 +169,9 @@ namespace glplay::egl {
       // display = eglGetDisplay(gbm);
       throw std::runtime_error("couldn't create EGLDisplay from GBM device. Legacy eglGetDisplay not supported.\n");
     }
+#else
+    egl_display = eglGetDisplay(gbmDevice.get());
+#endif
 
     if (egl_display == nullptr) {
       throw std::runtime_error("couldn't create EGLDisplay from GBM device\n");
@@ -173,7 +184,7 @@ namespace glplay::egl {
   }
 
   auto EGLDevice::initializeConfig(EGLDisplay display) -> EGLConfig {
-    EGLConfig ret = EGL_NO_CONFIG_KHR;
+    EGLConfig ret = nullptr;
     EGLint num_cfg = 0;
     EGLBoolean err = 0;
 
@@ -223,7 +234,7 @@ namespace glplay::egl {
     EGLContext ret = nullptr;
     EGLint nattribs = 2;
     EGLint attribs[] = {
-      EGL_CONTEXT_MAJOR_VERSION, 3,
+      EGL_CONTEXT_MAJOR_VERSION_KHR, 3,
       EGL_NONE,                  EGL_NONE,
       EGL_NONE,                  EGL_NONE,
       EGL_NONE,                  EGL_NONE,
@@ -232,10 +243,10 @@ namespace glplay::egl {
     EGLint *attrib_version = &attribs[1];
 
     if (glCore) {
-      attribs[nattribs++] = EGL_CONTEXT_MINOR_VERSION;
+      attribs[nattribs++] = EGL_CONTEXT_MINOR_VERSION_KHR;
       attribs[nattribs++] = 3;
-      attribs[nattribs++] = EGL_CONTEXT_OPENGL_PROFILE_MASK;
-      attribs[nattribs++] = EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT;
+      attribs[nattribs++] = EGL_CONTEXT_OPENGL_PROFILE_MASK_KHR;
+      attribs[nattribs++] = EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT_KHR;
 
       err = eglBindAPI(EGL_OPENGL_API);
       assert(err);

@@ -3,6 +3,7 @@
 #include "../gbm/gbm.hpp"
 #include "../nix/nix.hpp"
 #include <EGL/egl.h>
+#include <GLES3/gl3.h>
 #include <algorithm>
 #include <cstdio>
 #include <iostream>
@@ -95,8 +96,8 @@ static void atomic_event_handler(int fd,
 	auto *adapter = static_cast<glplay::kms::DisplayAdapter*>(user_data);
 	glplay::kms::Display *display = nullptr;
 	struct timespec completion = {
-		.tv_sec = tv_sec,
-		.tv_nsec = (tv_usec * 1000),
+		.tv_sec = static_cast<__syscall_slong_t>(tv_sec),
+		.tv_nsec = static_cast<__syscall_slong_t>((tv_usec * 1000)),
 	};
 	int64_t delta_nsec;
 
@@ -371,7 +372,9 @@ inline auto buffer_egl_fill(gsl::shared_ptr<glplay::kms::DisplayAdapter> adapter
       GLfloat col[4];
       GLfloat verts[8];
       GLuint err = glGetError();
-      fill_verts(verts, col, display.frame_num, i);
+			fill_verts(verts, col, display.frame_num, i);
+			    // TODO: Do this properly.
+#ifdef GL_ES_VERSION_3_0
       glBindBuffer(GL_ARRAY_BUFFER, adapter->eglDevice.vbo);
       /* glBufferSubData is most supported across GLES2 / Core profile,
       * Core profile / GLES3 might have better ways */
@@ -381,6 +384,23 @@ inline auto buffer_egl_fill(gsl::shared_ptr<glplay::kms::DisplayAdapter> adapter
       glUniform4f(adapter->eglDevice.col_uniform, col[0], col[1], col[2], col[3]);
       glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
       glBindVertexArray(0);
+#else
+			glBindBuffer(GL_ARRAY_BUFFER, adapter->eglDevice.vbo);
+
+			// Copy vertex data to the VBO
+			glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_DYNAMIC_DRAW);
+
+			glEnableVertexAttribArray(adapter->eglDevice.pos_attr);
+			glVertexAttribPointer(adapter->eglDevice.pos_attr, 2, GL_FLOAT, GL_FALSE, 0, (char*)nullptr);
+			
+			// Drawing code
+			glUniform4f(adapter->eglDevice.col_uniform, col[0], col[1], col[2], col[3]);
+			glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+			// Unbind VBO and disable vertex attributes after drawing
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+			glDisableVertexAttribArray(adapter->eglDevice.pos_attr);
+#endif
       err = glGetError();
       if (err != GL_NO_ERROR)
         debug("GL error state 0x%x\n", err);

@@ -37,14 +37,14 @@ namespace glplay::egl {
 		  GLuint col_uniform;
 		  GLuint vbo;
 		  GLuint vao;
+      GLuint gl_prog;
+      GLuint pos_attr;
       bool explicit_fencing;
   
     private:
       bool fb_modifiers;
       
 		  EGLConfig cfg;
-		  GLuint gl_prog;
-		  GLuint pos_attr;
 		  /* Whether to use big OpenGL Core Profile context or to use GLES */
 		  bool gl_core;
 

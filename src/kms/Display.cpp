@@ -301,6 +301,7 @@ namespace glplay::kms {
     attribs.at(nattribs++) = EGL_DMA_BUF_PLANE0_PITCH_EXT;
     attribs.at(nattribs++) = buffer.pitches[0];
     debug("\tplane 0 pitch %d\n", attribs.at(nattribs - 1));
+    //TODO: Do this properly
 #ifdef EGL_VERSION_1_5
     if (buffer.supportsFBModifiers) {
       attribs.at(nattribs++) = EGL_DMA_BUF_PLANE0_MODIFIER_HI_EXT;
@@ -318,6 +319,7 @@ namespace glplay::kms {
       attribs.at(nattribs++) = buffer.offsets[1];
       attribs.at(nattribs++) = EGL_DMA_BUF_PLANE1_PITCH_EXT;
       attribs.at(nattribs++) = buffer.pitches[1];
+      //TODO: Do this properly
 #ifdef EGL_VERSION_1_5
       if (buffer.supportsFBModifiers) {
         attribs.at(nattribs++) = EGL_DMA_BUF_PLANE1_MODIFIER_HI_EXT;
@@ -335,6 +337,7 @@ namespace glplay::kms {
       attribs.at(nattribs++) = buffer.offsets[2];
       attribs.at(nattribs++) = EGL_DMA_BUF_PLANE2_PITCH_EXT;
       attribs.at(nattribs++) = buffer.pitches[2];
+      //TODO: Do this properly
 #ifdef EGL_VERSION_1_5
       if (buffer.supportsFBModifiers) {
         attribs.at(nattribs++) = EGL_DMA_BUF_PLANE2_MODIFIER_HI_EXT;
@@ -345,6 +348,7 @@ namespace glplay::kms {
 #endif
     }
 
+//TODO: Do this properly. Also note that PLANE3 is only egl1.5
 #ifdef EGL_VERSION_1_5
     if (num_planes > 3) {
       attribs.at(nattribs++) = EGL_DMA_BUF_PLANE3_FD_EXT;
