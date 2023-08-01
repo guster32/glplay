@@ -20,6 +20,27 @@
 		"CXX": "${config:ARCADIA_QEMU.CC_PREFIX}clang++",
 		"CC": "${config:ARCADIA_QEMU.CC_PREFIX}clang"
   },
+  "ARCADIA_ODROIDXU4":{
+    /* Target Device Settings */
+    "TARGET_IP":"localhost",
+    "TARGET_USER":"root",
+    "TARGET_SCP_PORT":"10022",
+
+    /* Project Settings */
+    "PROGRAM":"glplay",
+
+    /* Yocto SDK Configuration */
+    "ARCH":"arm-oe-linux-musleabi",
+    "SDK_DIR":"${env:HOME}/odroidxu4_sdk",
+    "ENVIRONMENT_SCRIPT":"${config:ARCADIA_ODROIDXU4.SDK_DIR}/environment-setup-cortexa15t2hf-neon-vfpv4-oe-linux-gnueabi",
+    "OECORE_NATIVE_SYSROOT":"${config:ARCADIA_ODROIDXU4.SDK_DIR}/sysroots/x86_64-oesdk-linux",
+    "SDKTARGETSYSROOT":"${config:ARCADIA_ODROIDXU4.SDK_DIR}/sysroots/cortexa15t2hf-neon-vfpv4-oe-linux-gnueabi",
+
+    /* Yocto SDK Constants */
+		"CC_PREFIX": "${config:ARCADIA_ODROIDXU4.OECORE_NATIVE_SYSROOT}/usr/bin/${config:ARCADIA_ODROIDXU4.ARCH}/${config:ARCADIA_ODROIDXU4.ARCH}-",
+		"CXX": "${config:ARCADIA_ODROIDXU4.CC_PREFIX}g++",
+		"CC": "${config:ARCADIA_ODROIDXU4.CC_PREFIX}g++"
+  },
   "files.associations": {
     "gsl": "cpp",
     "algorithm": "cpp",

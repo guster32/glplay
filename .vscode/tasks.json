@@ -55,6 +55,28 @@
       }
     },
     {
+      "label": "CrossBuildOdroidXU4",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "${workspaceFolder}/scripts/build.sh"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "SRC_DIR": "${workspaceFolder}",
+          "ENVIRONMENT_SCRIPT": "${config:ARCADIA_ODROIDXU4.ENVIRONMENT_SCRIPT}"
+        }
+      },
+      "problemMatcher": [
+        "$gcc"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
       "label": "CrossDeploy",
       "type": "shell",
       "command": "scp",
