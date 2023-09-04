@@ -30,11 +30,11 @@
     "PROGRAM":"glplay",
 
     /* Yocto SDK Configuration */
-    "ARCH":"arm-oe-linux-musleabi",
+    "ARCH":"arm-arcadia-linux-gnueabi",
     "SDK_DIR":"${env:HOME}/odroidxu4_sdk",
-    "ENVIRONMENT_SCRIPT":"${config:ARCADIA_ODROIDXU4.SDK_DIR}/environment-setup-cortexa15t2hf-neon-vfpv4-oe-linux-gnueabi",
-    "OECORE_NATIVE_SYSROOT":"${config:ARCADIA_ODROIDXU4.SDK_DIR}/sysroots/x86_64-oesdk-linux",
-    "SDKTARGETSYSROOT":"${config:ARCADIA_ODROIDXU4.SDK_DIR}/sysroots/cortexa15t2hf-neon-vfpv4-oe-linux-gnueabi",
+    "ENVIRONMENT_SCRIPT":"${config:ARCADIA_ODROIDXU4.SDK_DIR}/environment-setup-cortexa15t2hf-neon-vfpv4-arcadia-linux-gnueabi",
+    "OECORE_NATIVE_SYSROOT":"${config:ARCADIA_ODROIDXU4.SDK_DIR}/sysroots/cortexa15t2hf-neon-vfpv4-arcadia-linux-gnueabi",
+    "SDKTARGETSYSROOT":"${config:ARCADIA_ODROIDXU4.SDK_DIR}/sysroots/cortexa15t2hf-neon-vfpv4-arcadia-linux-gnueabi",
 
     /* Yocto SDK Constants */
 		"CC_PREFIX": "${config:ARCADIA_ODROIDXU4.OECORE_NATIVE_SYSROOT}/usr/bin/${config:ARCADIA_ODROIDXU4.ARCH}/${config:ARCADIA_ODROIDXU4.ARCH}-",
