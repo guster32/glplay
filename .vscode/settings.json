@@ -4,6 +4,7 @@
     "TARGET_IP":"localhost",
     "TARGET_USER":"root",
     "TARGET_SCP_PORT":"10022",
+    "TARGET_GDB_PORT":"13000",
 
     /* Project Settings */
     "PROGRAM":"glplay",
@@ -22,9 +23,10 @@
   },
   "ARCADIA_ODROIDXU4":{
     /* Target Device Settings */
-    "TARGET_IP":"localhost",
+    "TARGET_IP":"odroid-xu4",
     "TARGET_USER":"root",
-    "TARGET_SCP_PORT":"10022",
+    "TARGET_SCP_PORT":"22",
+    "TARGET_GDB_PORT":"3000",
 
     /* Project Settings */
     "PROGRAM":"glplay",

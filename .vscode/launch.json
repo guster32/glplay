@@ -26,11 +26,39 @@
             "preLaunchTask": "Build"
         },
         {
+          "name": "OdroidXU4 RemoteDebug GlPlay",
+          "type": "cppdbg",
+          "request": "launch",
+          "program": "${workspaceFolder}/crossbuild/debug/glplay",
+          "miDebuggerServerAddress": "${config:ARCADIA_ODROIDXU4.TARGET_IP}:${config:ARCADIA_ODROIDXU4.TARGET_GDB_PORT}",
+          "args": [],
+          "stopAtEntry": false,
+          "cwd": "${workspaceRoot}",
+          "environment": [],
+          "externalConsole": true,
+          "linux": {
+            "MIMode": "gdb"
+          },
+          "preLaunchTask": "CrossBuildDeployAndRemoteDebugOdroidXU4",
+          "setupCommands": [
+            {
+              "description": "Enable pretty-printing for gdb",
+              "text": "python import sys; sys.path.append('/usr/share/gcc-12/python');sys.path.insert(0, '/usr/bin/python');from libstdcxx.v6.printers import register_libstdcxx_printers;register_libstdcxx_printers(None)",
+              "ignoreFailures": false
+            },
+            {
+                "description": "Enable pretty-printing for gdb",
+                "text": "-enable-pretty-printing",
+                "ignoreFailures": true
+            }
+        ]
+        },
+        {
             "name": "RemoteDebug GlPlay",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/crossbuild/debug/glplay",
-            "miDebuggerServerAddress": "127.0.0.1:13000",
+            "miDebuggerServerAddress": "${config:ARCADIA_QEMU.TARGET_IP}:${config:ARCADIA_QEMU.TARGET_GDB_PORT}",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
