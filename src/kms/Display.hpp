@@ -11,12 +11,9 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
-#ifdef GLES3
 #include <GLES3/gl3.h>
 #include <GLES3/gl3ext.h>
-#elif GLES2
-#include <GLES2/gl2.h>
-#endif
+
 /*
  * GLES2 exts is needed for prototypes of GL_OES_EGL_image
  * (i.e. glEGLImageTargetTexture2DOES etc.)
@@ -113,11 +110,7 @@ namespace glplay::kms {
 
     struct {
       struct gbm_bo *bo;
-#ifdef EGL_VERSION_1_5
-      EGLImage img;
-#else
       EGLImageKHR img;
-#endif
       GLuint tex_id;
       GLuint fbo_id;
     } gbm{};
@@ -137,10 +130,10 @@ namespace glplay::kms {
       bool explicitFencing;
       Buffer *bufferPending;
       Buffer *bufferLast;
-      
+
       /* Fence FD for completion of the last atomic commit. */
       int commitFenceFD = -1;
-  
+
       /*
       * Time the last frame's commit completed from KMS, and when the
       * next frame's commit is predicted to complete.

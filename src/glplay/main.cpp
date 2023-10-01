@@ -3,11 +3,7 @@
 #include "../gbm/gbm.hpp"
 #include "../nix/nix.hpp"
 #include <EGL/egl.h>
-#ifdef GLES3
 #include <GLES3/gl3.h>
-#elif GLES2
-#include <GLES2/gl2.h>
-#endif
 
 #include <algorithm>
 #include <cstdio>
@@ -91,7 +87,7 @@ fd_replace(int *target, int source)
  * these times will be given as CLOCK_MONOTONIC values. If not (e.g. VMware),
  * all bets are off.
  */
-static void atomic_event_handler(int fd, 
+static void atomic_event_handler(int fd,
 	unsigned int sequence,
 	unsigned int tv_sec,
 	unsigned int tv_usec,
@@ -107,7 +103,7 @@ static void atomic_event_handler(int fd,
 	int64_t delta_nsec;
 
 	/* Find the output this event is delivered for. */
-	for (auto &disp : adapter->displays) {  
+	for (auto &disp : adapter->displays) {
 		if(disp.crtc->crtc_id == crtc_id) {
 			display = &disp;
 			break;
@@ -226,7 +222,7 @@ static void advance_frame(glplay::kms::Display &display, struct timespec *now)
 
 static struct glplay::kms::Buffer *find_free_buffer(struct glplay::kms::Display &display)
 {
-	for (auto &buffer : display.buffers) {  
+	for (auto &buffer : display.buffers) {
 		if (!buffer.in_use) {
 			return &buffer;
 		}
@@ -378,8 +374,6 @@ inline auto buffer_egl_fill(gsl::shared_ptr<glplay::kms::DisplayAdapter> adapter
       GLfloat verts[8];
       GLuint err = glGetError();
 			fill_verts(verts, col, display.frame_num, i);
-			    // TODO: Do this properly.
-#ifdef GLES3
       glBindBuffer(GL_ARRAY_BUFFER, adapter->eglDevice.vbo);
       /* glBufferSubData is most supported across GLES2 / Core profile,
       * Core profile / GLES3 might have better ways */
@@ -389,23 +383,6 @@ inline auto buffer_egl_fill(gsl::shared_ptr<glplay::kms::DisplayAdapter> adapter
       glUniform4f(adapter->eglDevice.col_uniform, col[0], col[1], col[2], col[3]);
       glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
       glBindVertexArray(0);
-#else
-			glBindBuffer(GL_ARRAY_BUFFER, adapter->eglDevice.vbo);
-
-			// Copy vertex data to the VBO
-			glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_DYNAMIC_DRAW);
-
-			glEnableVertexAttribArray(adapter->eglDevice.pos_attr);
-			glVertexAttribPointer(adapter->eglDevice.pos_attr, 2, GL_FLOAT, GL_FALSE, 0, (char*)nullptr);
-			
-			// Drawing code
-			glUniform4f(adapter->eglDevice.col_uniform, col[0], col[1], col[2], col[3]);
-			glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-			// Unbind VBO and disable vertex attributes after drawing
-			glBindBuffer(GL_ARRAY_BUFFER, 0);
-			glDisableVertexAttribArray(adapter->eglDevice.pos_attr);
-#endif
       err = glGetError();
       if (err != GL_NO_ERROR)
         debug("GL error state 0x%x\n", err);
@@ -462,8 +439,8 @@ inline auto buffer_egl_fill(gsl::shared_ptr<glplay::kms::DisplayAdapter> adapter
  * checkerboard; the boundaries advance from top-left to bottom-right.
  */
 auto buffer_fill(gsl::shared_ptr<glplay::kms::DisplayAdapter> adapter, glplay::kms::Display &display) -> glplay::kms::Buffer* {
-	
-	
+
+
 	// if (buffer->gbm.bo) {
 		// if (buffer->display->device->vk_device) {
 			// TODO: handle return value
@@ -720,7 +697,7 @@ int atomic_commit(gsl::shared_ptr<glplay::kms::DisplayAdapter> adapter, drmModeA
 
 	if (allow_modeset)
 		flags |= DRM_MODE_ATOMIC_ALLOW_MODESET;
-	
+
 	return drmModeAtomicCommit(adapter->getAdapterFD(), req, flags, adapter.get());
 }
 
@@ -737,7 +714,7 @@ auto main(int argc, char *argv[]) -> int {
 	auto paths = glplay::drm::getDevicePaths();
 	auto adapter = std::make_shared<glplay::kms::DisplayAdapter>(paths.at(0));
 	//Create renderer here  vk_device_create or device_egl_setup or software
-	
+
 	auto glplay_vt = glplay::nix::find_free_VT();
 	int orig_vt = glplay::nix::get_active_vt(glplay_vt.vt_fd);
 	/* Switch to the target VT. */
@@ -784,7 +761,7 @@ auto main(int argc, char *argv[]) -> int {
 		 * of any hardware changes it would need to perform to reach
 		 * the target state.
 		 */
-		for (auto &display : adapter->displays) {  
+		for (auto &display : adapter->displays) {
 			if(display.needs_repaint) {
 				/*
 				 * Add this output's new state to the atomic
@@ -858,6 +835,6 @@ auto main(int argc, char *argv[]) -> int {
 
 	glplay::nix::set_text(glplay_vt.vt_fd, orig_mode);
 	glplay::nix::activate_vt(glplay_vt.vt_fd, orig_vt);
-  
+
 	return 0;
 }

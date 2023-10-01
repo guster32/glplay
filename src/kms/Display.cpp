@@ -83,15 +83,15 @@ namespace glplay::kms {
     this->primary_plane = findPrimaryPlaneForCrtc();
     auto refresh = ((crtc->mode.clock * 1000000LL / crtc->mode.htotal) +
 		  (crtc->mode.vtotal / 2)) / crtc->mode.vtotal;
-    
+
     name = ((connector->connector_type < drm::connectorTypes.size()) ?
 		 	drm::connectorTypes.at(connector->connector_type) :
 			"UNKNOWN") + "-" + std::to_string(connector->connector_type_id);
 
     refreshIntervalNsec = millihzToNsec(refresh);
-    
+
     mode_blob_id = drm::mode_blob_create(adapterFD, &crtc->mode);
-    
+
     auto *planeProps = drmModeObjectGetProperties(adapterFD, primary_plane->plane_id, DRM_MODE_OBJECT_PLANE);
     drm::drm_property_info_populate(adapterFD, drm::plane_props, this->props.plane, drm::plane_props.size(), planeProps);
     this->plane_formats_populate(adapterFD, planeProps);
@@ -114,7 +114,7 @@ namespace glplay::kms {
 
   }
 
-  void Display::createEGLBuffers(int adapterFD, bool adapterSupportsFBModifiers, egl::EGLDevice &eglDevice, gbm::GBMDevice &gbmDevice) {    
+  void Display::createEGLBuffers(int adapterFD, bool adapterSupportsFBModifiers, egl::EGLDevice &eglDevice, gbm::GBMDevice &gbmDevice) {
     for (int idx = 0; idx < BUFFER_QUEUE_DEPTH; idx++) {
       Buffer buffer = createEGLBuffer(adapterFD, adapterSupportsFBModifiers, eglDevice, gbmDevice);
       std::array<uint64_t, 4> buffer_modifiers = { 0, };
@@ -128,7 +128,7 @@ namespace glplay::kms {
       }
 
       int err = 0;
-  
+
      	/*
       * Wrap our GEM buffer in a KMS framebuffer, so we can then attach it
       * to a plane.
@@ -184,7 +184,7 @@ namespace glplay::kms {
   auto Display::createEGLBuffer(int adapterFD, bool adapterSupportsFBModifiers, egl::EGLDevice &eglDevice, gbm::GBMDevice &gbmDevice) -> Buffer {
     static PFNEGLCREATEIMAGEKHRPROC create_img = nullptr;
     static PFNGLEGLIMAGETARGETTEXTURE2DOESPROC target_tex_2d = nullptr;
-    std::array<EGLint, 64> attribs = { 0, }; /* see note below about type */
+    std::array<EGLint, 17> attribs = { 0, }; /* see note below about type */
     EGLint nattribs = 0;
     EGLBoolean err = 0;
     int num_planes = 0;
@@ -202,7 +202,7 @@ namespace glplay::kms {
     * driver wants to use. We can then query the GBM BO to find out which
     * modifier it selected.
     */
-    if (buffer.supportsFBModifiers) {
+    if (buffer.supportsFBModifiers && gbm_bo_create_with_modifiers) {
       buffer.gbm.bo = gbm_bo_create_with_modifiers(
         gbmDevice.get(),
         crtc->mode.hdisplay,
@@ -224,7 +224,7 @@ namespace glplay::kms {
         DRM_FORMAT_XRGB8888,
         GBM_BO_USE_RENDERING | GBM_BO_USE_SCANOUT);
     }
-  
+
     if(buffer.gbm.bo == nullptr) {
       error("failed to create %u x %u BO\n",
 		    crtc->mode.hdisplay, crtc->mode.vdisplay);
@@ -238,13 +238,13 @@ namespace glplay::kms {
     buffer.format = DRM_FORMAT_XRGB8888;
     buffer.width = crtc->mode.hdisplay;
     buffer.height = crtc->mode.vdisplay;
-    buffer.modifier = gbm_bo_get_modifier(buffer.gbm.bo);
-    num_planes = gbm_bo_get_plane_count(buffer.gbm.bo);
+    buffer.modifier = DRM_FORMAT_MOD_SAMSUNG_64_32_TILE; //gbm_bo_get_modifier(buffer.gbm.bo);
+    num_planes = 1;//gbm_bo_get_plane_count(buffer.gbm.bo);
     for (int i = 0; i < num_planes; i++) {
       union gbm_bo_handle handle{};
 
       /* In hindsight, we got this API wrong. */
-      handle = gbm_bo_get_handle_for_plane(buffer.gbm.bo, i);
+      handle = gbm_bo_get_handle(buffer.gbm.bo); //gbm_bo_get_handle_for_plane(buffer.gbm.bo, i);
       if (handle.u32 == 0 || handle.s32 == -1) {
         error("failed to get handle for BO plane %d (modifier 0x%" PRIx64 ")\n",
               i, buffer.modifier);
@@ -259,14 +259,14 @@ namespace glplay::kms {
         failOnBOCreationError(buffer, dma_buf_fds);
       }
 
-      buffer.pitches.at(i) = gbm_bo_get_stride_for_plane(buffer.gbm.bo, i);
+      buffer.pitches.at(i) = gbm_bo_get_stride(buffer.gbm.bo); //gbm_bo_get_stride_for_plane(buffer.gbm.bo, i);
       if (buffer.pitches.at(i) == 0) {
         error("failed to get stride for BO plane %d (modifier 0x%" PRIx64 ")\n",
               i, buffer.modifier);
         failOnBOCreationError(buffer, dma_buf_fds);
       }
 
-      buffer.offsets.at(i) = gbm_bo_get_offset(buffer.gbm.bo, i);
+      buffer.offsets.at(i) = 0; //gbm_bo_get_offset(buffer.gbm.bo, i);
 	  }
 
     /*
@@ -302,76 +302,73 @@ namespace glplay::kms {
     attribs.at(nattribs++) = buffer.pitches[0];
     debug("\tplane 0 pitch %d\n", attribs.at(nattribs - 1));
     //TODO: Do this properly
-#ifdef EGL_VERSION_1_5
-    if (buffer.supportsFBModifiers) {
-      attribs.at(nattribs++) = EGL_DMA_BUF_PLANE0_MODIFIER_HI_EXT;
-      attribs.at(nattribs++) = buffer.modifier >> 32;
-      debug("\tmodifier hi 0x%" PRIx32 "\n", attribs.at(nattribs - 1));
-      attribs.at(nattribs++) = EGL_DMA_BUF_PLANE0_MODIFIER_LO_EXT;
-      attribs.at(nattribs++) = buffer.modifier & 0xffffffff;
-      debug("\tmodifier lo 0x%" PRIx32 "\n", attribs.at(nattribs - 1));
-    }
-#endif
-    if (num_planes > 1) {
-      attribs.at(nattribs++) = EGL_DMA_BUF_PLANE1_FD_EXT;
-      attribs.at(nattribs++) = dma_buf_fds[1];
-      attribs.at(nattribs++) = EGL_DMA_BUF_PLANE1_OFFSET_EXT;
-      attribs.at(nattribs++) = buffer.offsets[1];
-      attribs.at(nattribs++) = EGL_DMA_BUF_PLANE1_PITCH_EXT;
-      attribs.at(nattribs++) = buffer.pitches[1];
-      //TODO: Do this properly
-#ifdef EGL_VERSION_1_5
-      if (buffer.supportsFBModifiers) {
-        attribs.at(nattribs++) = EGL_DMA_BUF_PLANE1_MODIFIER_HI_EXT;
-        attribs.at(nattribs++) = buffer.modifier >> 32;
-        attribs.at(nattribs++) = EGL_DMA_BUF_PLANE1_MODIFIER_LO_EXT;
-        attribs.at(nattribs++) = buffer.modifier & 0xffffffff;
-      }
-#endif
-    }
 
-    if (num_planes > 2) {
-      attribs.at(nattribs++) = EGL_DMA_BUF_PLANE2_FD_EXT;
-      attribs.at(nattribs++) = dma_buf_fds[2];
-      attribs.at(nattribs++) = EGL_DMA_BUF_PLANE2_OFFSET_EXT;
-      attribs.at(nattribs++) = buffer.offsets[2];
-      attribs.at(nattribs++) = EGL_DMA_BUF_PLANE2_PITCH_EXT;
-      attribs.at(nattribs++) = buffer.pitches[2];
-      //TODO: Do this properly
-#ifdef EGL_VERSION_1_5
-      if (buffer.supportsFBModifiers) {
-        attribs.at(nattribs++) = EGL_DMA_BUF_PLANE2_MODIFIER_HI_EXT;
-        attribs.at(nattribs++) = buffer.modifier >> 32;
-        attribs.at(nattribs++) = EGL_DMA_BUF_PLANE2_MODIFIER_LO_EXT;
-        attribs.at(nattribs++) = buffer.modifier & 0xffffffff;
-      }
-#endif
-    }
+    // if (buffer.supportsFBModifiers) {
+    //   attribs.at(nattribs++) = EGL_DMA_BUF_PLANE0_MODIFIER_HI_EXT;
+    //   attribs.at(nattribs++) = buffer.modifier >> 32;
+    //   debug("\tmodifier hi 0x%" PRIx32 "\n", attribs.at(nattribs - 1));
+    //   attribs.at(nattribs++) = EGL_DMA_BUF_PLANE0_MODIFIER_LO_EXT;
+    //   attribs.at(nattribs++) = buffer.modifier & 0xffffffff;
+    //   debug("\tmodifier lo 0x%" PRIx32 "\n", attribs.at(nattribs - 1));
+    // }
+
+    // if (num_planes > 1) {
+    //   attribs.at(nattribs++) = EGL_DMA_BUF_PLANE1_FD_EXT;
+    //   attribs.at(nattribs++) = dma_buf_fds[1];
+    //   attribs.at(nattribs++) = EGL_DMA_BUF_PLANE1_OFFSET_EXT;
+    //   attribs.at(nattribs++) = buffer.offsets[1];
+    //   attribs.at(nattribs++) = EGL_DMA_BUF_PLANE1_PITCH_EXT;
+    //   attribs.at(nattribs++) = buffer.pitches[1];
+
+    //   if (buffer.supportsFBModifiers) {
+    //     attribs.at(nattribs++) = EGL_DMA_BUF_PLANE1_MODIFIER_HI_EXT;
+    //     attribs.at(nattribs++) = buffer.modifier >> 32;
+    //     attribs.at(nattribs++) = EGL_DMA_BUF_PLANE1_MODIFIER_LO_EXT;
+    //     attribs.at(nattribs++) = buffer.modifier & 0xffffffff;
+    //   }
+    // }
+
+    // if (num_planes > 2) {
+    //   attribs.at(nattribs++) = EGL_DMA_BUF_PLANE2_FD_EXT;
+    //   attribs.at(nattribs++) = dma_buf_fds[2];
+    //   attribs.at(nattribs++) = EGL_DMA_BUF_PLANE2_OFFSET_EXT;
+    //   attribs.at(nattribs++) = buffer.offsets[2];
+    //   attribs.at(nattribs++) = EGL_DMA_BUF_PLANE2_PITCH_EXT;
+    //   attribs.at(nattribs++) = buffer.pitches[2];
+
+    //   if (buffer.supportsFBModifiers) {
+    //     attribs.at(nattribs++) = EGL_DMA_BUF_PLANE2_MODIFIER_HI_EXT;
+    //     attribs.at(nattribs++) = buffer.modifier >> 32;
+    //     attribs.at(nattribs++) = EGL_DMA_BUF_PLANE2_MODIFIER_LO_EXT;
+    //     attribs.at(nattribs++) = buffer.modifier & 0xffffffff;
+    //   }
+
+    // }
 
 //TODO: Do this properly. Also note that PLANE3 is only egl1.5
-#ifdef EGL_VERSION_1_5
-    if (num_planes > 3) {
-      attribs.at(nattribs++) = EGL_DMA_BUF_PLANE3_FD_EXT;
-      attribs.at(nattribs++) = dma_buf_fds[3];
-      attribs.at(nattribs++) = EGL_DMA_BUF_PLANE3_OFFSET_EXT;
-      attribs.at(nattribs++) = buffer.offsets[3];
-      attribs.at(nattribs++) = EGL_DMA_BUF_PLANE3_PITCH_EXT;
-      attribs.at(nattribs++) = buffer.pitches[3];
-      if (buffer.supportsFBModifiers) {
-        attribs.at(nattribs++) = EGL_DMA_BUF_PLANE3_MODIFIER_HI_EXT;
-        attribs.at(nattribs++) = buffer.modifier >> 32;
-        attribs.at(nattribs++) = EGL_DMA_BUF_PLANE3_MODIFIER_LO_EXT;
-        attribs.at(nattribs++) = buffer.modifier & 0xffffffff;
-      }
-    }
-#endif
+// #ifdef EGL_VERSION_1_5
+//     if (num_planes > 3) {
+//       attribs.at(nattribs++) = EGL_DMA_BUF_PLANE3_FD_EXT;
+//       attribs.at(nattribs++) = dma_buf_fds[3];
+//       attribs.at(nattribs++) = EGL_DMA_BUF_PLANE3_OFFSET_EXT;
+//       attribs.at(nattribs++) = buffer.offsets[3];
+//       attribs.at(nattribs++) = EGL_DMA_BUF_PLANE3_PITCH_EXT;
+//       attribs.at(nattribs++) = buffer.pitches[3];
+//       if (buffer.supportsFBModifiers) {
+//         attribs.at(nattribs++) = EGL_DMA_BUF_PLANE3_MODIFIER_HI_EXT;
+//         attribs.at(nattribs++) = buffer.modifier >> 32;
+//         attribs.at(nattribs++) = EGL_DMA_BUF_PLANE3_MODIFIER_LO_EXT;
+//         attribs.at(nattribs++) = buffer.modifier & 0xffffffff;
+//       }
+//     }
+// #endif
 
     attribs.at(nattribs++) = EGL_NONE;
 
     err = eglMakeCurrent(eglDevice.egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE,
             eglDevice.ctx);
     assert(err);
-    
+
     /*
     * Create an EGLImage from our GBM BO, which will give EGL and GLES
     * the ability to use it as a render target.
@@ -432,14 +429,14 @@ namespace glplay::kms {
     }
 
 	  blob = drmModeGetPropertyBlob(adapterFD, blob_id);
-	
+
     auto edid = Edid(static_cast<const uint8_t*>(blob->data), blob->length);
     drmModeFreePropertyBlob(blob);
 
     debug("[%s] EDID PNP ID %s, EISA ID %s, name %s, serial %s\n",
       this->name.c_str(), edid.pnp_id.data(), edid.eisa_id.data(),
       edid.monitor_name.data(), edid.serial_number.data());
-      
+
   }
 
   void Display::plane_formats_populate(int adapterFD, drmModeObjectPropertiesPtr props) {
@@ -451,7 +448,7 @@ namespace glplay::kms {
       debug("[%s] plane does not have IN_FORMATS\n", this->name.c_str());
 		  return;
     }
-    
+
     auto *blob = drmModeGetPropertyBlob(adapterFD, blob_id);
 
     auto *fmt_mod_blob = static_cast<drm_format_modifier_blob*>(blob->data);
@@ -469,7 +466,7 @@ namespace glplay::kms {
         if ((idx < mod->offset) || (idx > mod->offset + 63)) {
           continue;
         }
-        if ((mod->formats & (1 << (idx - mod->offset))) == 0U) {
+        if (!(mod->formats & (1 << (idx - mod->offset)))) {
           continue;
         }
         // I think this is a simple vector of .

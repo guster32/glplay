@@ -3,7 +3,7 @@
 
 namespace glplay::egl {
   EGLDevice::EGLDevice(gbm::GBMDevice &gbmDevice) : egl_dpy(initializeDisplay(gbmDevice)) {
-       
+
     const char* exts_with_display = eglQueryString(egl_dpy, EGL_EXTENSIONS);
     assert(exts_with_display);
     fb_modifiers &= gl_extension_supported(exts_with_display, "EGL_EXT_image_dma_buf_import_modifiers");
@@ -14,10 +14,11 @@ namespace glplay::egl {
     * buffers independently and import them. We require both of the KMS
     * and EGL stacks to support modifiers in order to use them, but not
     * having them is not fatal.
+    * MALI drivers for t62x does not advertise support for `EGL_EXT_image_dma_buf_import` even though it does support it.
     */
-    if (!gl_extension_supported(exts_with_display, "EGL_EXT_image_dma_buf_import")) {
-      throw std::runtime_error("EGL dmabuf import not supported\n");
-    }
+    // if (!gl_extension_supported(exts_with_display, "EGL_EXT_image_dma_buf_import")) {
+    //   throw std::runtime_error("EGL dmabuf import not supported\n");
+    // }
 
     /*
     * At the cost of wasted allocations, we could avoid the need for
@@ -28,7 +29,7 @@ namespace glplay::egl {
     if (!gl_extension_supported(exts_with_display, "EGL_KHR_surfaceless_context")) {
       throw std::runtime_error("EGL surfaceless context not supported");
     }
-    
+
     GLint status = 0;
     gl_core = getenv("GL_CORE") != nullptr;
 
@@ -70,8 +71,6 @@ namespace glplay::egl {
         eglDestroyContext(egl_dpy, ctx);
       }
     } else {
-      // TODO: Do this properly.
-#ifdef GLES3
       const GLubyte *ext;
       bool found_image = false;
       bool found_sync = false;
@@ -97,9 +96,6 @@ namespace glplay::egl {
         error("GL_OES_EGL_sync not supported\n");
         eglDestroyContext(egl_dpy, ctx);
       }
-#else
-      error("Unable to get GL extensions\n");
-#endif
     }
 
     printf("using GL setup: \n"
@@ -157,8 +153,6 @@ namespace glplay::egl {
     EGLDisplay egl_display = nullptr;
     // Get supported extensions without considering a display
     const char *exts_no_display = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
-    //TODO: Do this properly
-#ifdef EGL_VERSION_1_5
     /*
     * Try to use eglGetPlatformDisplay.
     */
@@ -166,12 +160,8 @@ namespace glplay::egl {
       auto get_dpy = reinterpret_cast<PFNEGLGETPLATFORMDISPLAYEXTPROC>(eglGetProcAddress("eglGetPlatformDisplayEXT"));
       egl_display = get_dpy(EGL_PLATFORM_GBM_KHR, gbmDevice.get(), nullptr);
     } else {
-      // display = eglGetDisplay(gbm);
-      throw std::runtime_error("couldn't create EGLDisplay from GBM device. Legacy eglGetDisplay not supported.\n");
+      egl_display = eglGetDisplay(gbmDevice.get());
     }
-#else
-    egl_display = eglGetDisplay(gbmDevice.get());
-#endif
 
     if (egl_display == nullptr) {
       throw std::runtime_error("couldn't create EGLDisplay from GBM device\n");
